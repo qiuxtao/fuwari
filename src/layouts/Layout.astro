@@ -149,6 +149,17 @@ const bannerOffset =
 			let offset = Math.floor(window.innerHeight * (BANNER_HEIGHT_EXTEND / 100));
 			offset = offset - offset % 4;
 			document.documentElement.style.setProperty('--banner-height-extend', `${offset}px`);
+
+			// --- Background Blur & Hide Settings (Anti-Flicker) ---
+			// Load blur settings immediately
+			const bgBlur = localStorage.getItem("bg-blur") || "4"; 
+			document.documentElement.style.setProperty("--bg-blur", `${bgBlur}px`);
+
+            // Load hide-bg setting immediately
+            const hideBg = localStorage.getItem("hide-bg") === "true";
+            if (hideBg) {
+                document.documentElement.classList.add("hide-bg");
+            }
 		</script>
 		<style define:vars={{
 			configHue,
@@ -171,6 +182,9 @@ const bannerOffset =
 				--bg-repeat: var(--bg-repeat);
 				--bg-attachment: var(--bg-attachment);
 				--bg-opacity: var(--bg-opacity);
+				
+				/* Default values, will be updated by JS */
+				--bg-blur: 4px;
 			}
 
 			/* Background container style */
@@ -185,6 +199,10 @@ const bannerOffset =
 				background-size: var(--bg-size);
 				background-repeat: var(--bg-repeat);
 				background-attachment: var(--bg-attachment);
+				
+				/* Apply filters using CSS variables */
+				filter: blur(var(--bg-blur));
+				
 				opacity: 0; /* Start hidden to avoid flicker */
 				pointer-events: none;
 				z-index: -1;
@@ -194,6 +212,12 @@ const bannerOffset =
 			#bg-box.loaded {
 				opacity: var(--bg-opacity);
 			}
+
+            /* 核心修复：如果 hide-bg 类存在，强制隐藏背景，优先级最高 */
+            html.hide-bg #bg-box {
+                opacity: 0 !important;
+                visibility: hidden; /* 进一步优化性能，移出渲染树 */
+            }
 		</style>
 
 		<slot name="head"></slot>
@@ -288,7 +312,17 @@ import {
 	// SizeObserverPlugin,
 	// ClickScrollPlugin
 } from 'overlayscrollbars';
-import {getHue, getStoredTheme, setHue, setTheme} from "../utils/setting-utils";
+// 引入新的 background 设置函数
+import {
+    getHue, 
+    getStoredTheme, 
+    setHue, 
+    setTheme, 
+    getBgBlur, 
+    setBgBlur, 
+    getHideBg, // 新增
+    setHideBg  // 新增
+} from "../utils/setting-utils";
 import {pathsEqual, url} from "../utils/url-utils";
 import {
 	BANNER_HEIGHT,
@@ -297,19 +331,6 @@ import {
 	MAIN_PANEL_OVERLAPS_BANNER_HEIGHT
 } from "../constants/constants";
 import { siteConfig } from '../config';
-
-/* Preload fonts */
-// (async function() {
-// 	try {
-// 		await Promise.all([
-// 			document.fonts.load("400 1em Roboto"),
-// 			document.fonts.load("700 1em Roboto"),
-// 		]);
-// 		document.body.classList.remove("hidden");
-// 	} catch (error) {
-// 		console.log("Failed to load fonts:", error);
-// 	}
-// })();
 
 const bannerEnabled = !!document.getElementById('banner-wrapper')
 
@@ -341,11 +362,18 @@ function loadHue() {
 	setHue(getHue())
 }
 
+// 加载背景设置
+function loadBgSettings() {
+    // 确保 CSS 变量与 localStorage 同步
+    setBgBlur(getBgBlur());
+    setHideBg(getHideBg()); // 这一步会更新 html class
+}
+
 function initCustomScrollbar() {
 	const bodyElement = document.querySelector('body');
 	if (!bodyElement) return;
 	
-    // 简化版滚动条初始化，移除所有 KaTeX 监听器
+    // 简化版滚动条初始化
 	OverlayScrollbars(
 		{
 			target: bodyElement,
@@ -378,6 +406,7 @@ function init() {
 	// disableAnimation()()		// TODO
 	loadTheme();
 	loadHue();
+    loadBgSettings(); // 初始化背景设置
 	initCustomScrollbar();
 	showBanner();
 }
