@@ -25,6 +25,15 @@ export const siteConfig: SiteConfig = {
       url: "",
     },
   },
+  background: {
+    enable: true,
+    src: "/background.jpg",
+    position: "center",
+    size: "cover",
+    repeat: "no-repeat",
+    attachment: "fixed",
+    opacity: 1,
+  },
   toc: {
     enable: true,
     depth: 2,
