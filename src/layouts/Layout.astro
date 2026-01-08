@@ -195,33 +195,6 @@ const bannerOffset =
 		@apply opacity-0 -translate-y-16
 	}
 }
-
-/* === 修复版：全屏背景图 === */
-
-/* 1. 先把 html 和 body 原本的背景色去掉，防止遮挡 */
-html, body {
-    background: transparent !important;
-}
-
-/* 2. 使用伪元素把背景图“钉”在最底层 */
-html::before {
-    content: "";
-    position: fixed; /* 强制固定，不受 body 滚动和动画影响 */
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: -999; /* 放在最最底层 */
-    
-    /* 这里引用你的图片 */
-    background-image: url('/background.jpg');
-    background-repeat: no-repeat;
-    background-position: center center;
-    background-size: cover;
-    
-    /* 解决部分手机浏览器地址栏伸缩导致的跳动问题 */
-    will-change: transform; 
-}
 </style>
 
 <script>
