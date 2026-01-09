@@ -40,7 +40,7 @@ export const siteConfig: SiteConfig = {
   },
   favicon: [
     {
-	src: '/favicon/favicon.ico',
+	src: '/favicon.ico',
 	}
   ],
 };
@@ -50,11 +50,12 @@ export const navBarConfig: NavBarConfig = {
     LinkPreset.Home,
     LinkPreset.Archive,
     LinkPreset.About,
+    LinkPreset.Friends,
   ],
 };
 
 export const profileConfig: ProfileConfig = {
-  avatar: "assets/images/avatar.jpg",
+  avatar: "/avatar.jpg",
   name: "秋晓桃",
   bio: "嗨，别来无恙啊！",
   links: [
