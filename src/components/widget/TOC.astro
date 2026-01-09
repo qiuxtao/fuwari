@@ -131,66 +131,66 @@ class TableOfContents extends HTMLElement {
         this.tocContent = this.querySelector('#toc-content');
         this.activeIndicator = this.querySelector('#active-indicator');
 
-        if (!buffer || !buffer.dataset.headings) {
-            if (this.tocContent) this.tocContent.innerHTML = '';
-            if (this.activeIndicator) this.activeIndicator.classList.add('hidden');
-            this.toggleSidebarLayout(false);
-            return;
-        }
+        // 默认认为没有 TOC 数据
+        let hasTOC = false;
 
-        try {
-            const headings = JSON.parse(buffer.dataset.headings);
-            
-            if (headings.length === 0) {
-                if (this.tocContent) this.tocContent.innerHTML = '';
-                this.toggleSidebarLayout(false);
-                return;
+        if (buffer && buffer.dataset.headings) {
+            try {
+                const headings = JSON.parse(buffer.dataset.headings);
+                if (headings.length > 0) {
+                    hasTOC = true;
+                    const tocData = buildTocData(headings);
+                    const newHtml = generateTocHTML(tocData);
+                    if (this.tocContent) this.tocContent.innerHTML = newHtml;
+                    this.init(); 
+                } else {
+                    if (this.tocContent) this.tocContent.innerHTML = '';
+                }
+            } catch (e) {
+                console.error('Failed to update TOC', e);
             }
-
-            const tocData = buildTocData(headings);
-            const newHtml = generateTocHTML(tocData);
-            if (this.tocContent) this.tocContent.innerHTML = newHtml;
-            
-            this.toggleSidebarLayout(true);
-            this.init(); 
-
-        } catch (e) {
-            console.error('Failed to update TOC', e);
-            this.toggleSidebarLayout(false);
+        } else {
+            if (this.tocContent) this.tocContent.innerHTML = '';
         }
+
+        this.toggleSidebarLayout(hasTOC);
     }
 
-    toggleSidebarLayout(isPost) {
+    // 核心修改：分离“布局位置”和“内容显示”的逻辑
+    toggleSidebarLayout(hasTOC) {
         const tocCard = this.closest('.toc-card');
         const sidebarProfile = document.getElementById('sidebar-profile');
         const sidebarWidgets = document.getElementById('sidebar-widgets');
-        const sidebar = document.getElementById('sidebar'); // 获取整个侧边栏容器
+        const sidebar = document.getElementById('sidebar');
 
-        if (isPost) {
-            // 文章页：
-            // 1. 显示目录，隐藏其他
+        // 1. 控制内容显示 (互斥)
+        // 有 TOC 就只显 TOC；没有 TOC 就显 Profile/Widgets
+        if (hasTOC) {
             if (tocCard) tocCard.style.display = 'block';
             if (sidebarProfile) sidebarProfile.style.display = 'none';
             if (sidebarWidgets) sidebarWidgets.style.display = 'none';
-
-            // 2. 核心修复：更新 Grid 顺序
-            // 确保侧边栏在第 2 行 (内容下方)
-            if (sidebar) {
-                sidebar.classList.remove('row-start-1');
-                sidebar.classList.add('row-start-2');
-            }
         } else {
-            // 主页/其他：
-            // 1. 隐藏目录，显示其他
             if (tocCard) tocCard.style.display = 'none';
             if (sidebarProfile) sidebarProfile.style.display = 'flex';
             if (sidebarWidgets) sidebarWidgets.style.display = 'flex';
+        }
 
-            // 2. 核心修复：更新 Grid 顺序
-            // 确保侧边栏在第 1 行 (置顶)
+        // 2. 控制 Grid 位置 (主页置顶，其他置底)
+        // 关键修复：不再依赖 hasTOC，而是依赖 URL
+        const path = window.location.pathname.replace(/\/$/, '');
+        const isHomePage = path === '' || path === '/index.html' || path === '/fuwari' || path === '/fuwari/index.html'; // 兼容可能的 base path
+
+        if (isHomePage) {
+            // 主页：Sidebar 在第一行
             if (sidebar) {
                 sidebar.classList.remove('row-start-2');
                 sidebar.classList.add('row-start-1');
+            }
+        } else {
+            // 所有非主页 (文章/归档/关于)：Sidebar 在第二行
+            if (sidebar) {
+                sidebar.classList.remove('row-start-1');
+                sidebar.classList.add('row-start-2');
             }
         }
     }
@@ -301,10 +301,11 @@ class TableOfContents extends HTMLElement {
         requestAnimationFrame(() => {
             this.init();
             const buffer = document.getElementById('toc-data-buffer');
+            let hasData = false;
             if (buffer && buffer.dataset.headings) {
-                const hasData = JSON.parse(buffer.dataset.headings).length > 0;
-                this.toggleSidebarLayout(hasData);
+                hasData = JSON.parse(buffer.dataset.headings).length > 0;
             }
+            this.toggleSidebarLayout(hasData);
         });
         
         if (window.swup) {
