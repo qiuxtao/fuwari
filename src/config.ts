@@ -82,7 +82,7 @@ export const profileConfig: ProfileConfig = {
     {
       name: "QQ",
       icon: "fa6-brands:qq",
-      url: "https://res.abeim.cn/api-qq?qq=1021865556",
+      url: "https://qm.qq.com/q/kK8ZfdYGmQ",
     },
     {
       name: "Telegram",

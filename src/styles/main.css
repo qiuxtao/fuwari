@@ -55,6 +55,29 @@
         text-[var(--btn-content)] dark:text-white/75
     }
 
+    .btn-menu {
+        /* 基础布局 */
+        @apply flex items-center justify-center transition-colors duration-200 ease-in-out;
+        
+        /* 默认状态：
+           背景：使用 color-mix 生成 10% 浓度的 Primary 颜色，实现“主题色的淡色” 
+           文字：保持深灰/浅灰，避免对比度过低
+        */
+        background-color: color-mix(in srgb, var(--primary), transparent 90%);
+        @apply text-neutral-600 dark:text-neutral-400;
+
+        /* 悬浮状态：变为实心主题色，文字变白 */
+        @apply hover:bg-[var(--primary)] hover:text-white;
+
+        /* 图标动画：悬浮时放大并旋转 */
+        & svg {
+            @apply transition-transform duration-200;
+        }
+        &:hover svg {
+            @apply scale-110 -rotate-6;
+        }
+    }
+
     .link-underline {
         @apply transition underline decoration-2 decoration-dashed decoration-[var(--link-underline)]
         hover:decoration-[var(--link-hover)] active:decoration-[var(--link-active)] underline-offset-[0.25rem]

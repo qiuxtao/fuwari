@@ -32,11 +32,11 @@ function shuffleArray(array: any[]) {
 const shuffledFriends = shuffleArray(friends);
 ---
 
-<MainGridLayout title="友链" description="我的朋友们">
+<MainGridLayout title="朋友们" description="我的朋友们">
   <div class="flex w-full rounded-[var(--radius-large)] overflow-hidden relative min-h-32">
     <div class="card-base z-10 px-9 py-6 relative w-full">
       
-      <h1 class="text-2xl font-bold mb-4 text-black/90 dark:text-white/90">友链</h1>
+      <h1 class="text-2xl font-bold mb-4 text-black/90 dark:text-white/90">朋友们</h1>
       
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {shuffledFriends.map((friend) => (

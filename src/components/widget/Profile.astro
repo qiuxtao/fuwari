@@ -5,6 +5,14 @@ import { url } from "../../utils/url-utils";
 import ImageWrapper from "../misc/ImageWrapper.astro";
 
 const config = profileConfig;
+
+const siteLinks = [
+    { name: '神秘小盘', url: 'https://pan.qiuxiaotao.com/', icon: 'fa6-solid:cloud' },
+    { name: '监控站', url: 'https://status.qiuxiaotao.com/', icon: 'fa6-solid:server' },
+    { name: '会议室', url: 'https://meeting.qiuxiaotao.cn/', icon: 'fa6-solid:comments' },
+    { name: 'MC地图', url: 'https://mcmap.qiuxiaotao.com/', icon: 'fa6-solid:map' },
+    { name: 'NextChat', url: 'https://gpt.qiuxiaotao.com/', icon: 'fa6-solid:robot' },
+]
 ---
 <div class="card-base p-3">
     <a aria-label="Go to About Page" href={url('/about/')}
@@ -24,16 +32,37 @@ const config = profileConfig;
         <div class="text-center text-neutral-400 mb-2.5 transition">{config.bio}</div>
         <div class="flex flex-wrap gap-2 justify-center mb-1">
             {config.links.length > 1 && config.links.map(item =>
-                    <a rel="me" aria-label={item.name} href={item.url} target="_blank" class="btn-regular rounded-lg h-10 w-10 active:scale-90">
+                    <a rel="me" aria-label={item.name} href={item.url} target="_blank" 
+                       class="btn-menu rounded-lg h-10 w-10 active:scale-90">
                         <Icon name={item.icon} class="text-[1.5rem]"></Icon>
                     </a>
             )}
             {config.links.length == 1 && <a rel="me" aria-label={config.links[0].name} href={config.links[0].url} target="_blank"
-                                            class="btn-regular rounded-lg h-10 gap-2 px-3 font-bold active:scale-95">
+                                            class="btn-menu rounded-lg h-10 gap-2 px-3 font-bold active:scale-95">
                 <Icon name={config.links[0].icon} class="text-[1.5rem]"></Icon>
                 {config.links[0].name}
             </a>}
         </div>
     </div>
-</div>
 
+    <div class="w-full h-[1px] bg-neutral-100 dark:bg-neutral-800 my-4"></div>
+
+    <div class="font-bold text-lg mb-3 ml-2 text-neutral-900 dark:text-neutral-100 transition-colors">
+        网站列表
+    </div>
+    
+    <div class="grid grid-cols-2 gap-3 px-2 pb-1">
+        {siteLinks.map((item) => (
+            <a 
+                href={item.url} 
+                target="_blank" 
+                class="btn-menu h-10 gap-2 px-3 rounded-lg active:scale-95"
+            >
+                <div class="text-lg">
+                    <Icon name={item.icon} />
+                </div>
+                <span class="font-medium text-sm">{item.name}</span>
+            </a>
+        ))}
+    </div>
+</div>
