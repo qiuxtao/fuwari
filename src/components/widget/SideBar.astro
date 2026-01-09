@@ -12,30 +12,31 @@ interface Props {
 }
 
 const { class: className, headings } = Astro.props;
+const isPost = headings && headings.length > 0;
 ---
-<div id="sidebar" class:list={[className, "w-full"]}>
-    <div class="flex flex-col w-full gap-4 mb-4">
+<div id="sidebar" class:list={[className, "w-full flex flex-col gap-4"]}>
+    
+    <div id="sidebar-profile" class="flex flex-col w-full gap-4" style={isPost ? "display: none;" : ""}>
         <Profile></Profile>
         <NavMenu />
     </div>
+
     <div id="sidebar-sticky" class="transition-all duration-700 flex flex-col w-full gap-4 top-4 sticky top-4">
         
-        {headings && headings.length > 0 && (
-            <div class="card-base p-4 onload-animation" style="animation-delay: 150ms">
-                <div class="font-bold text-lg text-neutral-900 dark:text-neutral-100 mb-2 transition relative ml-2
-                    before:w-1 before:h-4 before:rounded-md before:bg-[var(--primary)]
-                    before:absolute before:-left-3 before:top-[0.33rem]">
-                    目录
-                </div>
-                <div id="toc-inner-wrapper" class="w-full">
-                    <div id="toc" class="w-full">
-                        <TOC headings={headings} />
-                    </div>
-                </div>
+        <div class="card-base p-4 toc-card" style={isPost ? "" : "display: none;"}>
+            <div class="font-bold text-lg text-neutral-900 dark:text-neutral-100 mb-2 transition relative ml-2
+                before:w-1 before:h-4 before:rounded-md before:bg-[var(--primary)]
+                before:absolute before:-left-3 before:top-[0.33rem]">
+                目录
             </div>
-        )}
+            <div class="w-full">
+                <TOC headings={headings} />
+            </div>
+        </div>
 
-        <Categories class="onload-animation" style="animation-delay: 200ms"></Categories>
-        <Tag class="onload-animation" style="animation-delay: 250ms"></Tag>
+        <div id="sidebar-widgets" class="flex flex-col gap-4" style={isPost ? "display: none;" : ""}>
+            <Categories class="onload-animation" style="animation-delay: 200ms"></Categories>
+            <Tag class="onload-animation" style="animation-delay: 250ms"></Tag>
+        </div>
     </div>
 </div>

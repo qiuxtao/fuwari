@@ -11,8 +11,6 @@ let { headings = [] } = Astro.props;
 
 const className = Astro.props.class;
 
-const isPostsRoute = Astro.url.pathname.startsWith("/posts/");
-
 const removeTailingHash = (text: string) => {
 	let lastIndexOfHash = text.lastIndexOf("#");
 	if (lastIndexOfHash !== text.length - 1) {
@@ -48,183 +46,276 @@ function buildToc(headings: MarkdownHeading[]): TocItem[] {
 
 const toc = buildToc(headings);
 ---
-{isPostsRoute &&
-<table-of-contents class:list={[className, "group block relative z-0"]}>
-    <div class="relative">
-        <TOCList items={toc} />
-        <div id="active-indicator" class:list={[{'hidden': headings.length == 0}, "-z-10 absolute bg-[var(--toc-btn-hover)] left-0 right-0 rounded-lg transition-all " +
-            "border-2 border-[var(--toc-btn-hover)] dark:border-[var(--toc-btn-active)] border-dashed hidden"]}></div>
+<table-of-contents class:list={[className, "group block relative z-0"]} id="toc-container">
+    <div class="relative" style="mask-image: none !important; -webkit-mask-image: none !important;">
+        <div id="toc-content">
+            <TOCList items={toc} />
+        </div>
+        <div id="active-indicator" class:list={[{'hidden': headings.length == 0}, 
+            "-z-10 absolute left-0 right-0 rounded-lg transition-all duration-200 " +
+            "bg-[var(--toc-btn-hover)] border-2 border-transparent " + 
+            "group-hover:bg-transparent group-hover:border-[var(--toc-btn-active)] group-hover:border-dashed"
+        ]}></div>
     </div>
-</table-of-contents>}
+</table-of-contents>
 
 <script>
+function generateTocHTML(items, level = 0) {
+    if (!items || items.length === 0) return '';
+    let html = `<div class="flex flex-col gap-0">`;
+    items.forEach((item, index) => {
+        const paddingLeft = `calc(0.75rem + ${level * 1}rem)`;
+        let badgeContent = '';
+        let badgeClass = "transition w-5 h-5 shrink-0 rounded-md text-xs flex items-center justify-center font-bold mt-[0.125rem]";
+        if (level === 0) {
+            badgeClass += " bg-[var(--toc-badge-bg)] text-[var(--btn-content)]";
+            badgeContent = `${index + 1}`;
+        } else if (level === 1) {
+            badgeContent = `<div class="transition w-1.5 h-1.5 rounded-[0.1875rem] bg-[var(--toc-badge-bg)]"></div>`;
+        } else {
+            badgeContent = `<div class="transition w-1 h-1 rounded-sm bg-black/5 dark:bg-white/10"></div>`;
+        }
+        let textClass = "transition text-sm break-words leading-tight mt-[0.125rem]";
+        if (level === 0 || level === 1) textClass += " text-50";
+        else textClass += " text-30";
+
+        html += `
+            <div class="flex flex-col relative group-item">
+                <a href="#${item.slug}" 
+                   class="flex gap-2 items-start relative transition w-full min-h-9 rounded-lg hover:bg-[var(--toc-btn-hover)] active:bg-[var(--toc-btn-active)] py-2 pr-2"
+                   style="padding-left: ${paddingLeft}">
+                    <div class="${badgeClass}">${badgeContent}</div>
+                    <div class="${textClass}">${item.text}</div>
+                </a>
+                ${generateTocHTML(item.children, level + 1)}
+            </div>
+        `;
+    });
+    html += `</div>`;
+    return html;
+}
+
+function buildTocData(headings) {
+    const toc = [];
+    const parentStack = [];
+    headings.forEach((h) => {
+        let text = h.text;
+        if (text.endsWith('#')) text = text.substring(0, text.length - 1);
+        const item = { ...h, text: text, children: [] };
+        while (parentStack.length > 0 && parentStack[parentStack.length - 1].depth >= item.depth) {
+            parentStack.pop();
+        }
+        if (parentStack.length > 0) {
+            parentStack[parentStack.length - 1].children.push(item);
+        } else {
+            toc.push(item);
+        }
+        parentStack.push(item);
+    });
+    return toc;
+}
+
 class TableOfContents extends HTMLElement {
-    visibleClass = "visible";
-    observer: IntersectionObserver;
-    anchorNavTarget: HTMLElement | null = null;
-    headingIdxMap = new Map<string, number>();
-    headings: HTMLElement[] = [];
-    sections: HTMLElement[] = [];
     tocEntries: HTMLAnchorElement[] = [];
-    active: boolean[] = [];
+    headings: HTMLElement[] = [];
     activeIndicator: HTMLElement | null = null;
+    tocContent: HTMLElement | null = null;
+    ticking = false;
 
     constructor() {
         super();
-        this.observer = new IntersectionObserver(
-            this.markVisibleSection, { threshold: 0 }
-        );
-    };
+    }
 
-    markVisibleSection = (entries: IntersectionObserverEntry[]) => {
-        entries.forEach((entry) => {
-            const id = entry.target.children[0]?.getAttribute("id");
-            const idx = id ? this.headingIdxMap.get(id) : undefined;
-            if (idx != undefined)
-                this.active[idx] = entry.isIntersecting;
+    refreshTOC = () => {
+        const buffer = document.getElementById('toc-data-buffer');
+        this.tocContent = this.querySelector('#toc-content');
+        this.activeIndicator = this.querySelector('#active-indicator');
 
-            if (entry.isIntersecting && this.anchorNavTarget == entry.target.firstChild)
-                this.anchorNavTarget = null;
-        });
-        
-        if (!this.active.includes(true)) {
-            // 当没有任何章节可见时，尝试回退检查
-            this.fallback();
-        } else {
-            this.update();
+        if (!buffer || !buffer.dataset.headings) {
+            if (this.tocContent) this.tocContent.innerHTML = '';
+            if (this.activeIndicator) this.activeIndicator.classList.add('hidden');
+            this.toggleSidebarLayout(false);
+            return;
         }
-    };
 
-    toggleActiveHeading = () => {
-        let i = this.active.length - 1;
-        let min = this.active.length - 1, max = 0;
-        let foundActive = false;
-
-        // 找出可见范围的最小和最大索引
-        while (i >= 0) {
-            if (this.active[i]) {
-                this.tocEntries[i].classList.add(this.visibleClass);
-                min = Math.min(min, i);
-                max = Math.max(max, i);
-                foundActive = true;
-            } else {
-                this.tocEntries[i].classList.remove(this.visibleClass);
-            }
-            i--;
-        }
-        
-        if (foundActive && this.activeIndicator) {
-            let top = this.tocEntries[min].offsetTop;
-            let height = (this.tocEntries[max].offsetTop + this.tocEntries[max].offsetHeight) - top;
+        try {
+            const headings = JSON.parse(buffer.dataset.headings);
             
-            // 修正：确保指示器样式正确应用
-            this.activeIndicator.style.display = "block";
-            this.activeIndicator.style.top = `${top}px`;
-            this.activeIndicator.style.height = `${height}px`;
+            if (headings.length === 0) {
+                if (this.tocContent) this.tocContent.innerHTML = '';
+                this.toggleSidebarLayout(false);
+                return;
+            }
+
+            const tocData = buildTocData(headings);
+            const newHtml = generateTocHTML(tocData);
+            if (this.tocContent) this.tocContent.innerHTML = newHtml;
+            
+            this.toggleSidebarLayout(true);
+            this.init(); 
+
+        } catch (e) {
+            console.error('Failed to update TOC', e);
+            this.toggleSidebarLayout(false);
+        }
+    }
+
+    toggleSidebarLayout(isPost) {
+        const tocCard = this.closest('.toc-card');
+        const sidebarProfile = document.getElementById('sidebar-profile');
+        const sidebarWidgets = document.getElementById('sidebar-widgets');
+        const sidebar = document.getElementById('sidebar'); // 获取整个侧边栏容器
+
+        if (isPost) {
+            // 文章页：
+            // 1. 显示目录，隐藏其他
+            if (tocCard) tocCard.style.display = 'block';
+            if (sidebarProfile) sidebarProfile.style.display = 'none';
+            if (sidebarWidgets) sidebarWidgets.style.display = 'none';
+
+            // 2. 核心修复：更新 Grid 顺序
+            // 确保侧边栏在第 2 行 (内容下方)
+            if (sidebar) {
+                sidebar.classList.remove('row-start-1');
+                sidebar.classList.add('row-start-2');
+            }
+        } else {
+            // 主页/其他：
+            // 1. 隐藏目录，显示其他
+            if (tocCard) tocCard.style.display = 'none';
+            if (sidebarProfile) sidebarProfile.style.display = 'flex';
+            if (sidebarWidgets) sidebarWidgets.style.display = 'flex';
+
+            // 2. 核心修复：更新 Grid 顺序
+            // 确保侧边栏在第 1 行 (置顶)
+            if (sidebar) {
+                sidebar.classList.remove('row-start-2');
+                sidebar.classList.add('row-start-1');
+            }
+        }
+    }
+
+    updateActiveHeading = () => {
+        const viewportHeight = window.innerHeight;
+        const readingLine = 100;
+
+        let activeIndex = -1;
+        let maxVisibleIndex = -1;
+
+        for (let i = this.headings.length - 1; i >= 0; i--) {
+            const heading = this.headings[i];
+            if (!heading) continue;
+            
+            const rect = heading.getBoundingClientRect();
+            if (rect.top <= readingLine) {
+                activeIndex = i;
+                break;
+            }
+        }
+
+        for (let i = 0; i < this.headings.length; i++) {
+            const heading = this.headings[i];
+            if (!heading) continue;
+            
+            const rect = heading.getBoundingClientRect();
+            if (rect.top < viewportHeight) {
+                maxVisibleIndex = i;
+            }
+        }
+
+        let min = activeIndex;
+        let max = maxVisibleIndex;
+
+        if (min === -1 && this.headings.length > 0) min = 0;
+        if (max < min) max = min;
+
+        this.updateUI(min, max);
+    }
+
+    updateUI(min: number, max: number) {
+        this.tocEntries.forEach((entry) => entry.classList.remove('active', 'text-[var(--primary)]', 'font-bold'));
+
+        if (min !== -1 && max !== -1) {
+            for (let i = min; i <= max; i++) {
+                const entry = this.tocEntries[i];
+                if (entry) entry.classList.add('active', 'text-[var(--primary)]', 'font-bold');
+            }
+
+            const minEntry = this.tocEntries[min];
+            const maxEntry = this.tocEntries[max];
+
+            if (this.activeIndicator && minEntry && maxEntry) {
+                this.activeIndicator.classList.remove("hidden");
+                const parent = this.activeIndicator.offsetParent;
+                if (parent) {
+                    const parentRect = parent.getBoundingClientRect();
+                    const minRect = minEntry.getBoundingClientRect();
+                    const maxRect = maxEntry.getBoundingClientRect();
+                    
+                    const top = minRect.top - parentRect.top;
+                    const height = maxRect.bottom - minRect.top;
+                    
+                    this.activeIndicator.style.top = `${top}px`;
+                    this.activeIndicator.style.height = `${height}px`;
+                }
+            }
         } else if (this.activeIndicator) {
-            this.activeIndicator.style.display = "none";
+            this.activeIndicator.classList.add("hidden");
         }
-    };
+    }
 
-    update = () => {
-        requestAnimationFrame(() => {
-            this.toggleActiveHeading();
-        });
-    };
+    handleAnchorClick = (event: Event) => {};
 
-    fallback = () => {
-        if (!this.sections.length) return;
-        
-        // 简单的回退策略：检查哪个章节包含了视口中心或顶部
-        let currentIdx = -1;
-        for (let i = 0; i < this.sections.length; i++) {
-            const rect = this.sections[i].getBoundingClientRect();
-            // 如果章节顶部在视口上方，且底部在视口内或下方，说明正在阅读此章节
-            if (rect.top <= window.innerHeight / 3 && rect.bottom > 0) {
-                currentIdx = i;
-            }
+    onScroll = () => {
+        if (!this.ticking) {
+            window.requestAnimationFrame(() => {
+                this.updateActiveHeading();
+                this.ticking = false;
+            });
+            this.ticking = true;
         }
-
-        if (currentIdx !== -1) {
-            this.active.fill(false);
-            this.active[currentIdx] = true;
-            this.update();
-        }
-    };
-
-    handleAnchorClick = (event: Event) => {
-        const anchor = event
-            .composedPath()
-            .find((element) => element instanceof HTMLAnchorElement);
-        
-        if (anchor && anchor instanceof HTMLAnchorElement) {
-            const id = decodeURIComponent(anchor.hash?.substring(1));
-            const idx = this.headingIdxMap.get(id);
-            if (idx !== undefined) {
-                this.anchorNavTarget = this.headings[idx];
-                // 点击后立即更新高亮，不等滚动回调
-                this.active.fill(false);
-                this.active[idx] = true;
-                this.update();
-            } else {
-                this.anchorNavTarget = null;
-            }
-        }
-    };
+    }
 
     init() {
-        // 核心修改：不再查找全局ID，而是查找组件内部元素
-        // 这使得组件可以在任何地方复用
         this.activeIndicator = this.querySelector("#active-indicator");
         this.tocEntries = Array.from(this.querySelectorAll<HTMLAnchorElement>("a[href^='#']"));
 
-        if (this.tocEntries.length === 0) return;
-
-        this.sections = new Array(this.tocEntries.length);
-        this.headings = new Array(this.tocEntries.length);
-        
-        for (let i = 0; i < this.tocEntries.length; i++) {
-            const id = decodeURIComponent(this.tocEntries[i].hash?.substring(1));
-            const heading = document.getElementById(id);
-            // 文章内容结构通常是 section > h1/h2...
-            // 但如果找不到 section，直接监控 heading 元素也可以
-            const section = heading?.parentElement || heading;
-            
-            if (heading instanceof HTMLElement && section instanceof HTMLElement) {
-                this.headings[i] = heading;
-                this.sections[i] = section;
-                this.headingIdxMap.set(id, i);
-            }
+        if (this.tocEntries.length === 0) {
+            if (this.activeIndicator) this.activeIndicator.classList.add('hidden');
+            return;
         }
-        
-        this.active = new Array(this.tocEntries.length).fill(false);
-        this.sections.forEach((section) => this.observer.observe(section));
-        
-        // 绑定点击事件到组件根元素，代理所有链接点击
+
+        this.headings = this.tocEntries.map(entry => {
+            const id = decodeURIComponent(entry.hash?.substring(1));
+            return document.getElementById(id);
+        }).filter((h): h is HTMLElement => h instanceof HTMLElement);
+
+        window.removeEventListener("scroll", this.onScroll);
+        window.addEventListener("scroll", this.onScroll);
         this.addEventListener("click", this.handleAnchorClick);
-        
-        // 初始检查
-        this.fallback();
+
+        this.updateActiveHeading();
     };
 
     connectedCallback() {
-        // 等待可能的动画结束
-        const element = document.querySelector('.prose');
-        if (element) {
-            // 如果已经在视口中，可能动画早已结束，设置一个极短超时作为保底
-            setTimeout(() => this.init(), 100);
-            element.addEventListener('animationend', () => {
-                // 防止重复初始化
-                if (this.tocEntries.length === 0) this.init();
-            }, { once: true });
-        } else {
+        requestAnimationFrame(() => {
             this.init();
+            const buffer = document.getElementById('toc-data-buffer');
+            if (buffer && buffer.dataset.headings) {
+                const hasData = JSON.parse(buffer.dataset.headings).length > 0;
+                this.toggleSidebarLayout(hasData);
+            }
+        });
+        
+        if (window.swup) {
+            window.swup.hooks.on('content:replace', () => {
+                this.refreshTOC();
+            });
         }
     };
 
     disconnectedCallback() {
-        this.sections.forEach((section) => this.observer.unobserve(section));
-        this.observer.disconnect();
+        window.removeEventListener("scroll", this.onScroll);
         this.removeEventListener("click", this.handleAnchorClick);
     };
 }
