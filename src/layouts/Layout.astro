@@ -372,6 +372,27 @@ function loadBgSettings() {
     setHideBg(getHideBg()); // 这一步会更新 html class
 }
 
+function initCustomScrollbar() {
+	const bodyElement = document.querySelector('body');
+	if (!bodyElement) return;
+	
+    // 简化版滚动条初始化
+	OverlayScrollbars(
+		{
+			target: bodyElement,
+			cancel: {
+				nativeScrollbarsOverlaid: true,    // don't initialize the overlay scrollbar if there is a native one
+			}
+		}, {
+		scrollbars: {
+			theme: 'scrollbar-base scrollbar-auto py-1',
+			autoHide: 'move',
+			autoHideDelay: 500,
+			autoHideSuspend: false,
+		},
+	});
+}
+
 function showBanner() {
 	if (!siteConfig.banner.enable) return;
 
