@@ -27,7 +27,7 @@ export const siteConfig: SiteConfig = {
   },
   background: {
     enable: true,
-    src: "/background.jpg",
+    src: "https://qiuxiaotao.cn/background.jpg",
     position: "center",
     size: "cover",
     repeat: "no-repeat",
@@ -40,7 +40,7 @@ export const siteConfig: SiteConfig = {
   },
   favicon: [
     {
-	src: '/favicon.ico',
+	src: 'https://qiuxiaotao.cn/favicon.ico',
 	}
   ],
 };
@@ -55,7 +55,7 @@ export const navBarConfig: NavBarConfig = {
 };
 
 export const profileConfig: ProfileConfig = {
-  avatar: "/avatar.jpg",
+  avatar: "https://qiuxiaotao.cn/avatar.jpg",
   name: "秋晓桃",
   bio: "嗨，别来无恙啊！",
   links: [
