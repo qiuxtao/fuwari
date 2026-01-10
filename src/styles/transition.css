@@ -54,3 +54,12 @@ html.is-animating .transition-swup-fade {
 #post-container :nth-child(5) { animation-delay: calc(var(--content-delay) + 250ms) }
 #post-container :nth-child(6) { animation-delay: calc(var(--content-delay) + 325ms) }
 
+/* 修复 OverlayScrollbars 初始化导致的“二次刷新”问题 
+  原理：当元素被移动到 .os-viewport (滚动条容器) 内部时，
+  强制取消动画并保持完全不透明状态。
+*/
+.os-viewport .onload-animation,
+[data-overlayscrollbars-viewport] .onload-animation {
+    animation: none !important;
+    opacity: 1 !important;
+}
