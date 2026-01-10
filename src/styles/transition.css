@@ -1,3 +1,6 @@
+:root {
+    --content-delay: 0ms; /* 给定默认值，防止 JS 加载前动画处于等待状态 */
+}
 /* Page transition animations with Swup */
 html.is-changing .transition-swup-fade {
     @apply transition-all duration-200
