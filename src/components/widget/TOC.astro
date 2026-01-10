@@ -308,11 +308,27 @@ class TableOfContents extends HTMLElement {
             this.toggleSidebarLayout(hasData);
         });
         
+    const registerHooks = () => {
+        // 再次检查 swup 是否存在，避免报错
         if (window.swup) {
             window.swup.hooks.on('content:replace', () => {
                 this.refreshTOC();
             });
+            
+            // 补充：确保每次切换后重新计算一次激活状态，防止高亮滞后
+            window.swup.hooks.on('content:replace', () => {
+                 setTimeout(() => {
+                    this.updateActiveHeading();
+                 }, 100); // 稍微延迟，确保 DOM 渲染完毕
+            });
         }
+    };
+
+    if (window.swup) {
+        registerHooks();
+    } else {
+        document.addEventListener('swup:enable', registerHooks);
+    }
     };
 
     disconnectedCallback() {

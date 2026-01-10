@@ -237,6 +237,7 @@ const bannerOffset =
 		<div id="page-height-extend" class="hidden h-[300vh]"></div>
 
 		<script is:inline>
+		{
 			// We check the CSS variable because siteConfig isn't available in this scope,
 			// but we pushed the url to --bg-url in the global style block above.
 			const bgUrl = getComputedStyle(document.documentElement).getPropertyValue('--bg-url').trim();
@@ -265,6 +266,7 @@ const bannerOffset =
 					}
 				}
 			}
+		}
 		</script>
 	</body>
 </html>
