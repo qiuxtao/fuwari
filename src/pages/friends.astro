@@ -39,6 +39,7 @@ const shuffledFriends = shuffleArray(friends);
       <h1 class="text-2xl font-bold mb-4 text-black/90 dark:text-white/90">朋友们</h1>
       
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div id="friend-list" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
         {shuffledFriends.map((friend) => (
           <a 
             href={friend.url} 
@@ -88,3 +89,23 @@ const shuffledFriends = shuffleArray(friends);
     </div>
   </div>
 </MainGridLayout>
+
+<script>
+  function shuffleFriends() {
+    const container = document.getElementById('friend-list');
+    if (container) {
+      // 获取所有卡片元素
+      const cards = Array.from(container.children);
+      // 随机打乱
+      cards.sort(() => Math.random() - 0.5);
+      // 重新追加到容器中（这将改变它们的显示顺序）
+      cards.forEach(card => container.appendChild(card));
+    }
+  }
+
+  // 初始加载时执行
+  shuffleFriends();
+
+  // 如果使用了 Swup (根据你的配置文件判断)，需要在内容替换后重新执行
+  document.addEventListener('swup:content:replace', shuffleFriends);
+</script>
