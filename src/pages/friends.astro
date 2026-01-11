@@ -1,6 +1,7 @@
 ---
 import MainGridLayout from "../layouts/MainGridLayout.astro";
 import { siteConfig } from "../config";
+import FriendList from "../components/FriendList.svelte";
 
 // 1. 定义友链数据
 const friends = [
@@ -18,18 +19,6 @@ const friends = [
   },
   // 在这里继续添加更多好友...
 ];
-
-// 2. 随机打乱函数
-function shuffleArray(array: any[]) {
-    const newArray = [...array];
-    for (let i = newArray.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
-    }
-    return newArray;
-}
-
-const shuffledFriends = shuffleArray(friends);
 ---
 
 <MainGridLayout title="朋友们" description="我的朋友们">
@@ -38,23 +27,7 @@ const shuffledFriends = shuffleArray(friends);
       
       <h1 class="text-2xl font-bold mb-4 text-black/90 dark:text-white/90">朋友们</h1>
       
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <div id="friend-list" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
-        {shuffledFriends.map((friend) => (
-          <a 
-            href={friend.url} 
-            target="_blank" 
-            rel="noopener noreferrer"
-            class="group flex items-center p-4 rounded-lg bg-[var(--card-bg)] hover:bg-[var(--btn-regular-bg-hover)] transition-all border border-black/5 dark:border-white/10 hover:scale-[1.02]"
-          >
-             <img src={friend.avatar} alt={friend.title} class="w-14 h-14 rounded-full mr-4 object-cover shadow-sm bg-white" />
-             <div class="flex flex-col min-w-0">
-               <span class="font-bold text-lg text-black/75 dark:text-white/75 group-hover:text-[var(--primary)] transition-colors truncate">{friend.title}</span>
-               <span class="text-sm text-black/40 dark:text-white/40 truncate">{friend.description}</span>
-             </div>
-          </a>
-        ))}
-      </div>
+      <FriendList client:only="svelte" friends={friends} />
 
       <hr class="my-8 border-black/10 dark:border-white/10 dashed" />
 
@@ -89,23 +62,3 @@ const shuffledFriends = shuffleArray(friends);
     </div>
   </div>
 </MainGridLayout>
-
-<script>
-  function shuffleFriends() {
-    const container = document.getElementById('friend-list');
-    if (container) {
-      // 获取所有卡片元素
-      const cards = Array.from(container.children);
-      // 随机打乱
-      cards.sort(() => Math.random() - 0.5);
-      // 重新追加到容器中（这将改变它们的显示顺序）
-      cards.forEach(card => container.appendChild(card));
-    }
-  }
-
-  // 初始加载时执行
-  shuffleFriends();
-
-  // 如果使用了 Swup (根据你的配置文件判断)，需要在内容替换后重新执行
-  document.addEventListener('swup:content:replace', shuffleFriends);
-</script>
