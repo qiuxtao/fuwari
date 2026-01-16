@@ -50,6 +50,11 @@ export const navBarConfig: NavBarConfig = {
     LinkPreset.Home,
     LinkPreset.Archive,
     LinkPreset.About,
+    {
+      name: "会议",
+      url: "/meeting/",     // 对应刚才创建的 src/pages/meeting.astro
+      external: false,     // 设为 false 表示站内链接
+    },
     LinkPreset.Friends,
   ],
 };

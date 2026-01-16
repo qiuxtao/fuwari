@@ -1,0 +1,405 @@
+---
+import MainGridLayout from "../layouts/MainGridLayout.astro";
+
+const title = "会议室";
+const description = "秋晓桃の会议室";
+---
+
+<MainGridLayout title={title} description={description}>
+    <link slot="head" href="https://api.hoshiroko.com/libs/fontawesome/css/all.min.css" rel="stylesheet">
+
+    <div id="meeting-overlay" class="fixed inset-0 bg-black/60 z-[90] opacity-0 pointer-events-none transition-opacity duration-500"></div>
+
+    <div id="meeting-app" class="meeting-wrapper relative w-full flex flex-col items-center justify-center min-h-[60vh] py-10 z-[100]">
+        
+        <div class="main-content w-full max-w-[450px] flex flex-col items-center relative">
+            <div class="input-group w-full flex flex-col items-center">
+                <input type="text" id="meetingInput" placeholder="输入会议名称" autocomplete="off">
+                <button id="joinButton">创建 / 加入会议</button>
+            </div>
+
+            <div id="historyContainer" class="history-container w-full flex flex-col gap-2 mt-6"></div>
+
+            <div class="button-container flex justify-center gap-5 mt-10">
+                <a href="https://qiuxiaotao.cn/Jitsi%20Meet.apk" class="download-button" target="_blank" rel="noopener">
+                    <i class="fab fa-android mr-2"></i>安卓
+                </a>
+                <a href="https://itunes.apple.com/us/app/jitsi-meet/id1165103905" class="download-button" target="_blank" rel="noopener">
+                    <i class="fab fa-apple mr-2"></i>iOS
+                </a>
+            </div>
+        </div>
+    </div>
+</MainGridLayout>
+
+<style>
+    /* 1. 强制覆盖全局动画，修复毛玻璃失效 */
+    :global(#content-wrapper.onload-animation) {
+        animation: none !important; /* 禁用全局 transform 动画 */
+        opacity: 0; /* 初始隐藏，交给下面的 pure-fade-in 控制 */
+        animation: pure-fade-in 0.6s cubic-bezier(0.25, 0.8, 0.25, 1) forwards !important;
+        transform: none !important; /* 关键：移除位移，保护 backdrop-filter */
+    }
+
+    @keyframes pure-fade-in {
+        0% { opacity: 0; }
+        100% { opacity: 1; }
+    }
+
+    /* 2. 输入框样式 - 确保毛玻璃生效 */
+    #meetingInput {
+        width: 300px;
+        height: 50px;
+        padding: 0 25px;
+        font-size: 16px;
+        text-align: center;
+        
+        /* 毛玻璃设置 */
+        background-color: rgba(0, 0, 0, 0.25);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 12px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        color: #ffffff;
+        outline: none;
+        
+        /* 动画过渡 */
+        transition: width 0.4s cubic-bezier(0.25, 0.8, 0.25, 1),
+                    background-color 0.4s,
+                    border-color 0.4s,
+                    box-shadow 0.4s;
+        
+        margin-bottom: 20px;
+        /* 强制独立渲染层，防止父级影响 */
+        transform: translateZ(0); 
+    }
+
+    #meetingInput::placeholder {
+        color: rgba(255, 255, 255, 0.75);
+        transition: color 0.3s ease;
+    }
+
+    /* 3. 按钮样式 */
+    #joinButton {
+        width: 200px;
+        height: 50px;
+        border: none;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.9);
+        color: #333;
+        font-size: 18px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.2s, background-color 0.2s;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        transform: translateZ(0);
+    }
+    #joinButton:hover {
+        background: rgba(255, 255, 255, 1);
+        transform: scale(1.03);
+    }
+    /* 点击效果 */
+    #joinButton:active {
+        transform: scale(0.98);
+    }
+
+    /* 4. 聚焦模式样式 */
+    .meeting-wrapper.is-focused #meetingInput {
+        width: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        border-color: rgba(255, 255, 255, 0.8);
+        box-shadow: 0 0 30px rgba(255, 255, 255, 0.1);
+    }
+    .meeting-wrapper.is-focused #meetingInput::placeholder { color: transparent; }
+    
+    /* 聚焦时其他元素变暗 */
+    .meeting-wrapper.is-focused .history-container,
+    .meeting-wrapper.is-focused .button-container {
+        opacity: 0.3;
+        filter: blur(1px);
+        transition: opacity 0.4s, filter 0.4s;
+    }
+    .meeting-wrapper.is-focused .history-container:hover,
+    .meeting-wrapper.is-focused .button-container:hover {
+        opacity: 1;
+        filter: blur(0);
+    }
+
+    /* 5. 历史记录样式 (带毛玻璃) */
+    :global(.history-item) {
+        position: relative;
+        background-color: rgba(0, 0, 0, 0.25);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+        padding: 10px 15px;
+        color: #fff;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+        transition: all 0.3s;
+        transform: translateZ(0);
+    }
+    :global(.history-item:hover) {
+        background-color: rgba(255, 255, 255, 0.1);
+        padding-left: 24px;
+        border-color: rgba(255, 255, 255, 0.2);
+    }
+    :global(.history-item::before) {
+        content: '';
+        position: absolute;
+        left: 6px;
+        top: 50%;
+        transform: translateY(-50%) scaleY(0);
+        height: 20px;
+        width: 4px;
+        border-radius: 2px;
+        background-color: #ffffff;
+        transition: transform 0.2s;
+    }
+    :global(.history-item:hover::before) {
+        transform: translateY(-50%) scaleY(1);
+    }
+    
+    /* 6. 下载按钮 (带毛玻璃) */
+    .download-button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: rgba(255, 255, 255, 0.8);
+        text-decoration: none;
+        font-size: 14px;
+        padding: 8px 20px;
+        border-radius: 50px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+        transition: all 0.3s;
+        transform: translateZ(0);
+    }
+    .download-button:hover {
+        background-color: #ffffff;
+        color: #000000;
+        transform: scale(1.05);
+    }
+
+    /* 通用文字样式 */
+    :global(.history-header) { display: flex; justify-content: space-between; margin-bottom: 10px; }
+    :global(.history-title) { font-size: 14px; color: rgba(255,255,255,0.85); text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+    :global(.history-clear-all-btn) { 
+        background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); 
+        color: #ddd; border-radius: 12px; font-size: 12px; padding: 2px 10px; cursor: pointer; transition: all 0.2s;
+    }
+    :global(.history-clear-all-btn:hover) { background: #fff; color: #000; }
+    :global(.history-delete-btn) { background: none; border: none; color: #aaa; font-size: 18px; cursor: pointer; padding: 0 0 0 10px; }
+    :global(.history-delete-btn:hover) { color: #fff; }
+</style>
+
+<style is:global>
+    /* 聚焦时背景模糊 */
+    #bg-box {
+        transition: filter 0.6s cubic-bezier(0.25, 0.8, 0.25, 1), transform 0.6s;
+        will-change: filter, transform;
+    }
+    body.meeting-mode-focused #bg-box {
+        filter: blur(20px) !important;
+        transform: scale(1.05);
+    }
+    
+    /* 聚焦时显示遮罩 */
+    body.meeting-mode-focused #meeting-overlay {
+        opacity: 1;
+    }
+
+    /* 核心修复：隐藏底栏 */
+    /* 只要 body 拥有 is-meeting-page 类，就隐藏所有 footer */
+    body.is-meeting-page .footer {
+        display: none !important;
+    }
+    /* 备用：基于 DOM 结构的隐藏 (兼容性更好) */
+    body:has(#meeting-app) .footer {
+        display: none !important;
+    }
+</style>
+
+<script is:inline>
+    (function() {
+        const STORAGE_KEY = 'jitsiMeetingHistory';
+        const MAX_HISTORY_ITEMS = 8;
+        let isInitialized = false;
+
+        // 初始化函数：绑定事件，恢复状态
+        function initMeetingRoom() {
+            const input = document.getElementById('meetingInput');
+            const joinBtn = document.getElementById('joinButton');
+            const wrapper = document.querySelector('.meeting-wrapper');
+            
+            // 检查是否在会议室页面，如果找不到元素，说明在其他页面
+            if (!input || !wrapper) {
+                // 清理全局状态
+                document.body.classList.remove('is-meeting-page');
+                document.body.classList.remove('meeting-mode-focused');
+                isInitialized = false;
+                return;
+            }
+
+            // 防止重复初始化
+            if (wrapper.dataset.init === 'true') return;
+            wrapper.dataset.init = 'true';
+
+            // 标记当前为会议室页面 (用于隐藏底栏)
+            document.body.classList.add('is-meeting-page');
+
+            // --- 事件绑定 (直接绑定，最稳妥) ---
+            
+            // 1. 聚焦效果
+            input.onfocus = () => {
+                wrapper.classList.add('is-focused');
+                document.body.classList.add('meeting-mode-focused');
+            };
+            input.onblur = () => {
+                wrapper.classList.remove('is-focused');
+                document.body.classList.remove('meeting-mode-focused');
+            };
+
+            // 2. 回车加入
+            input.onkeydown = (e) => {
+                if (e.key === 'Enter') joinMeeting();
+            };
+
+            // 3. 按钮点击
+            joinBtn.onclick = joinMeeting;
+
+            // 加载历史记录
+            loadHistory();
+            
+            // 注入 Shake 动画样式
+            if (!document.getElementById('shake-style')) {
+                const s = document.createElement('style');
+                s.id = 'shake-style';
+                s.textContent = `@keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }`;
+                document.head.appendChild(s);
+            }
+        }
+
+        // --- 业务逻辑 ---
+
+        function loadHistory() {
+            const container = document.getElementById('historyContainer');
+            if (!container) return;
+
+            const history = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+            container.innerHTML = '';
+
+            if (history.length > 0) {
+                // 头部
+                const header = document.createElement('div');
+                header.className = 'history-header';
+                
+                const title = document.createElement('h3');
+                title.className = 'history-title';
+                title.textContent = '最近的会议';
+                
+                const clearBtn = document.createElement('button');
+                clearBtn.className = 'history-clear-all-btn';
+                clearBtn.textContent = '全部清除';
+                clearBtn.onclick = clearAllHistory;
+
+                header.appendChild(title);
+                header.appendChild(clearBtn);
+                container.appendChild(header);
+
+                // 列表项
+                history.forEach(name => {
+                    const item = document.createElement('div');
+                    item.className = 'history-item';
+                    
+                    const span = document.createElement('span');
+                    span.textContent = name;
+                    span.style.flexGrow = '1';
+                    span.style.cursor = 'pointer';
+                    span.onclick = () => goToMeeting(name);
+
+                    const delBtn = document.createElement('button');
+                    delBtn.className = 'history-delete-btn';
+                    delBtn.innerHTML = '&times;';
+                    delBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        deleteFromHistory(name);
+                    };
+
+                    item.appendChild(span);
+                    item.appendChild(delBtn);
+                    container.appendChild(item);
+                });
+            }
+        }
+
+        function saveToHistory(name) {
+            let history = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+            history = history.filter(i => i !== name);
+            history.unshift(name);
+            history = history.slice(0, MAX_HISTORY_ITEMS);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+        }
+
+        function deleteFromHistory(name) {
+            let history = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+            history = history.filter(i => i !== name);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+            loadHistory();
+        }
+
+        function clearAllHistory() {
+            localStorage.removeItem(STORAGE_KEY);
+            loadHistory();
+        }
+
+        function goToMeeting(name) {
+            const val = name?.trim();
+            if (val) {
+                saveToHistory(val);
+                window.location.href = `https://meeting.qiuxiaotao.cn/${encodeURIComponent(val)}`;
+                return true;
+            }
+            return false;
+        }
+
+        function joinMeeting() {
+            const input = document.getElementById('meetingInput');
+            if (!input) return;
+            if (!goToMeeting(input.value)) {
+                input.style.animation = 'shake 0.5s';
+                setTimeout(() => input.style.animation = '', 500);
+            }
+        }
+
+        // --- 启动逻辑 (核心修复) ---
+        
+        // 1. 立即尝试运行 (针对刷新页面)
+        initMeetingRoom();
+
+        // 2. 监听 Swup 页面替换事件 (针对点击链接进入)
+        if (window.swup) {
+            // 每次内容替换后，重新运行初始化
+            window.swup.hooks.on('content:replace', initMeetingRoom);
+            
+            // 离开页面时，强制清理背景模糊状态
+            window.swup.hooks.on('visit:start', () => {
+                document.body.classList.remove('meeting-mode-focused');
+                document.body.classList.remove('is-meeting-page');
+            });
+        } else {
+            // 备用：如果 Swup 还没加载，等它加载完再监听
+            document.addEventListener('swup:enable', () => {
+                window.swup.hooks.on('content:replace', initMeetingRoom);
+            });
+        }
+
+    })();
+</script>
