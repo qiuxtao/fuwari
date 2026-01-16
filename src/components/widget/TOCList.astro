@@ -1,0 +1,45 @@
+---
+import type { MarkdownHeading } from "astro";
+
+interface TocItem extends MarkdownHeading {
+	children: TocItem[];
+}
+
+interface Props {
+	items: TocItem[];
+	level?: number;
+}
+
+const { items, level = 0 } = Astro.props;
+---
+
+{items.length > 0 && (
+    <div class:list={["flex flex-col", level === 0 ? "gap-0" : "gap-0"]}>
+        {items.map((item, index) => (
+            <div class="flex flex-col relative group-item">
+                <a href={`#${item.slug}`} 
+                   class:list={["flex gap-2 items-start relative transition w-full min-h-9 rounded-lg hover:bg-[var(--toc-btn-hover)] active:bg-[var(--toc-btn-active)] py-2 pr-2"]}
+                   style={`padding-left: calc(0.75rem + ${level * 1}rem)`}
+                >
+                    <div class:list={["transition w-5 h-5 shrink-0 rounded-md text-xs flex items-center justify-center font-bold mt-[0.125rem]",
+                        {
+                            "bg-[var(--toc-badge-bg)] text-[var(--btn-content)]": level === 0,
+                        }
+                    ]}>
+                        {level === 0 && index + 1}
+                        {level === 1 && <div class="transition w-1.5 h-1.5 rounded-[0.1875rem] bg-[var(--toc-badge-bg)]"></div>}
+                        {level >= 2 && <div class="transition w-1 h-1 rounded-sm bg-black/5 dark:bg-white/10"></div>}
+                    </div>
+                    <div class:list={["transition text-sm break-words leading-tight mt-[0.125rem]", {
+                        "text-50": level === 0 || level === 1,
+                        "text-30": level >= 2,
+                    }]}>{item.text}</div>
+                </a>
+                
+                {item.children.length > 0 && (
+                    <Astro.self items={item.children} level={level + 1} />
+                )}
+            </div>
+        ))}
+    </div>
+)}

@@ -3,6 +3,8 @@ import "@fontsource/roboto/400.css";
 import "@fontsource/roboto/500.css";
 import "@fontsource/roboto/700.css";
 
+import 'overlayscrollbars/overlayscrollbars.css';
+
 import ConfigCarrier from "@components/ConfigCarrier.astro";
 import { profileConfig, siteConfig } from "@/config";
 import {
@@ -47,11 +49,17 @@ banner = siteConfig.banner.src;
 
 const enableBanner = siteConfig.banner.enable;
 
+// 核心修复：服务端直接判断是否启用背景
+// 并将此状态传递给 HTML class，彻底杜绝闪烁
+const enableBg = siteConfig.background && siteConfig.background.enable;
+
 let pageTitle: string;
 if (title) {
 	pageTitle = `${title} - ${siteConfig.title}`;
 } else {
-	pageTitle = `${siteConfig.title} - ${siteConfig.subtitle}`;
+	pageTitle = siteConfig.subtitle
+		? `${siteConfig.title} - ${siteConfig.subtitle}`
+		: siteConfig.title;
 }
 
 const favicons: Favicon[] =
@@ -73,7 +81,7 @@ const bannerOffset =
 ---
 
 <!DOCTYPE html>
-<html lang={siteLang} class="bg-[var(--page-bg)] transition text-[14px] md:text-[16px]"
+<html lang={siteLang} class:list={["bg-[var(--page-bg)] transition text-[14px] md:text-[16px]", {"with-bg": enableBg}]}
 	  data-overlayscrollbars-initialize
 >
 	<head>
@@ -89,10 +97,10 @@ const bannerOffset =
 		<meta property="og:title" content={pageTitle}>
 		<meta property="og:description" content={description || pageTitle}>
 		{setOGTypeArticle ? (
-        <meta property="og:type" content="article" />
-        ) : (
-        <meta property="og:type" content="website" />
-        )}
+		<meta property="og:type" content="article" />
+		) : (
+		<meta property="og:type" content="website" />
+		)}
 
 		<meta name="twitter:card" content="summary_large_image">
 		<meta property="twitter:url" content={Astro.url}>
@@ -109,8 +117,15 @@ const bannerOffset =
 			/>
 		))}
 
-		<!-- Set the theme before the page is rendered to avoid a flash -->
-		<script is:inline define:vars={{DEFAULT_THEME, LIGHT_MODE, DARK_MODE, AUTO_MODE, BANNER_HEIGHT_EXTEND, PAGE_WIDTH, configHue}}>
+		<script is:inline define:vars={{
+			DEFAULT_THEME, 
+			LIGHT_MODE, 
+			DARK_MODE, 
+			AUTO_MODE, 
+			BANNER_HEIGHT_EXTEND, 
+			PAGE_WIDTH, 
+			configHue
+		}}>
 			// Load the theme from local storage
 			const theme = localStorage.getItem('theme') || DEFAULT_THEME;
 			switch (theme) {
@@ -136,12 +151,76 @@ const bannerOffset =
 			let offset = Math.floor(window.innerHeight * (BANNER_HEIGHT_EXTEND / 100));
 			offset = offset - offset % 4;
 			document.documentElement.style.setProperty('--banner-height-extend', `${offset}px`);
+
+			// --- Background Blur & Hide Settings (Anti-Flicker) ---
+			// Load blur settings immediately
+			const bgBlur = localStorage.getItem("bg-blur") || "4"; 
+			document.documentElement.style.setProperty("--bg-blur", `${bgBlur}px`);
+
+            // Load hide-bg setting immediately
+            const hideBg = localStorage.getItem("hide-bg") === "true";
+            if (hideBg) {
+                document.documentElement.classList.add("hide-bg");
+            }
 		</script>
 		<style define:vars={{
 			configHue,
 			'page-width': `${PAGE_WIDTH}rem`,
-		}}></style>  <!-- defines global css variables. This will be applied to <html> <body> and some other elements idk why -->
+		}}></style>
 
+		<style is:global define:vars={{
+			// Map siteConfig.background to CSS variables
+			'bg-url': siteConfig.background.src ? `url("${siteConfig.background.src}")` : 'none',
+			'bg-position': siteConfig.background.position || 'center',
+			'bg-size': siteConfig.background.size || 'cover',
+			'bg-repeat': siteConfig.background.repeat || 'no-repeat',
+			'bg-attachment': siteConfig.background.attachment || 'fixed',
+			'bg-opacity': (siteConfig.background.opacity || 0.3).toString(),
+		}}>
+			:root {
+				--bg-url: var(--bg-url);
+				--bg-position: var(--bg-position);
+				--bg-size: var(--bg-size);
+				--bg-repeat: var(--bg-repeat);
+				--bg-attachment: var(--bg-attachment);
+				--bg-opacity: var(--bg-opacity);
+				
+				/* Default values, will be updated by JS */
+				--bg-blur: 4px;
+			}
+
+			/* Background container style */
+			#bg-box {
+				position: fixed;
+				top: 0;
+				left: 0;
+				width: 100%;
+				height: 100%;
+				background-image: var(--bg-url);
+				background-position: var(--bg-position);
+				background-size: var(--bg-size);
+				background-repeat: var(--bg-repeat);
+				background-attachment: var(--bg-attachment);
+				
+				/* Apply filters using CSS variables */
+				filter: blur(var(--bg-blur));
+				
+				opacity: 0; /* Start hidden to avoid flicker */
+				pointer-events: none;
+				z-index: -1;
+				transition: opacity 0.3s ease-in-out; /* Smooth fade-in */
+			}
+			
+			#bg-box.loaded {
+				opacity: var(--bg-opacity);
+			}
+
+            /* 核心修复：如果 hide-bg 类存在，强制隐藏背景，优先级最高 */
+            html.hide-bg #bg-box {
+                opacity: 0 !important;
+                visibility: hidden; /* 进一步优化性能，移出渲染树 */
+            }
+		</style>
 
 		<slot name="head"></slot>
 
@@ -151,11 +230,46 @@ const bannerOffset =
 	<body class=" min-h-screen transition " class:list={[{"lg:is-home": isHomePage, "enable-banner": enableBanner}]}
 		  data-overlayscrollbars-initialize
 	>
+		<div id="bg-box"></div>
+
 		<ConfigCarrier></ConfigCarrier>
 		<slot />
 
 		<!-- increase the page height during page transition to prevent the scrolling animation from jumping -->
 		<div id="page-height-extend" class="hidden h-[300vh]"></div>
+
+		<script is:inline>
+		{
+			// We check the CSS variable because siteConfig isn't available in this scope,
+			// but we pushed the url to --bg-url in the global style block above.
+			const bgUrl = getComputedStyle(document.documentElement).getPropertyValue('--bg-url').trim();
+			
+			// Check if URL is valid (not 'none' or empty)
+			if (bgUrl && bgUrl !== 'none' && bgUrl !== 'url("none")') {
+				const img = new Image();
+				// Extract the URL from "url('...')" wrapper
+				const urlMatch = bgUrl.match(/url\(["']?([^"')]+)["']?\)/);
+				
+				if (urlMatch) {
+					img.src = urlMatch[1];
+					// When image loads, add the class to fade it in
+					img.onload = function() {
+						const bgBox = document.getElementById('bg-box');
+						if (bgBox) {
+							bgBox.classList.add('loaded');
+						}
+					};
+					// Handle cached images that load immediately
+					if (img.complete) {
+						const bgBox = document.getElementById('bg-box');
+						if (bgBox) {
+							bgBox.classList.add('loaded');
+						}
+					}
+				}
+			}
+		}
+		</script>
 	</body>
 </html>
 
@@ -195,14 +309,23 @@ const bannerOffset =
 </style>
 
 <script>
-import 'overlayscrollbars/overlayscrollbars.css';
 import {
 	OverlayScrollbars,
 	// ScrollbarsHidingPlugin,
 	// SizeObserverPlugin,
 	// ClickScrollPlugin
 } from 'overlayscrollbars';
-import {getHue, getStoredTheme, setHue, setTheme} from "../utils/setting-utils";
+// 引入新的 background 设置函数
+import {
+    getHue, 
+    getStoredTheme, 
+    setHue, 
+    setTheme, 
+    getBgBlur, 
+    setBgBlur, 
+    getHideBg, // 新增
+    setHideBg  // 新增
+} from "../utils/setting-utils";
 import {pathsEqual, url} from "../utils/url-utils";
 import {
 	BANNER_HEIGHT,
@@ -211,50 +334,6 @@ import {
 	MAIN_PANEL_OVERLAPS_BANNER_HEIGHT
 } from "../constants/constants";
 import { siteConfig } from '../config';
-
-/* Preload fonts */
-// (async function() {
-// 	try {
-// 		await Promise.all([
-// 			document.fonts.load("400 1em Roboto"),
-// 			document.fonts.load("700 1em Roboto"),
-// 		]);
-// 		document.body.classList.remove("hidden");
-// 	} catch (error) {
-// 		console.log("Failed to load fonts:", error);
-// 	}
-// })();
-
-/* TODO This is a temporary solution for style flicker issue when the transition is activated */
-/* issue link: https://github.com/withastro/astro/issues/8711, the solution get from here too */
-/* update: fixed in Astro 3.2.4 */
-/*
-function disableAnimation() {
-	const css = document.createElement('style')
-	css.appendChild(
-		document.createTextNode(
-			`*{
-              -webkit-transition:none!important;
-              -moz-transition:none!important;
-              -o-transition:none!important;
-              -ms-transition:none!important;
-              transition:none!important
-              }`
-		)
-	)
-	document.head.appendChild(css)
-
-	return () => {
-		// Force restyle
-		;(() => window.getComputedStyle(document.body))()
-
-		// Wait for next tick before removing
-		setTimeout(() => {
-			document.head.removeChild(css)
-		}, 1)
-	}
-}
-*/
 
 const bannerEnabled = !!document.getElementById('banner-wrapper')
 
@@ -286,12 +365,19 @@ function loadHue() {
 	setHue(getHue())
 }
 
+// 加载背景设置
+function loadBgSettings() {
+    // 确保 CSS 变量与 localStorage 同步
+    setBgBlur(getBgBlur());
+    setHideBg(getHideBg()); // 这一步会更新 html class
+}
+
 function initCustomScrollbar() {
 	const bodyElement = document.querySelector('body');
 	if (!bodyElement) return;
+	
+    // 简化版滚动条初始化
 	OverlayScrollbars(
-		// docs say that a initialization to the body element would affect native functionality like window.scrollTo
-		// but just leave it here for now
 		{
 			target: bodyElement,
 			cancel: {
@@ -304,50 +390,6 @@ function initCustomScrollbar() {
 			autoHideDelay: 500,
 			autoHideSuspend: false,
 		},
-	});
-
-	const katexElements = document.querySelectorAll('.katex-display') as NodeListOf<HTMLElement>;
-
-	const katexObserverOptions = {
-		root: null,
-		rootMargin: '100px',
-		threshold: 0.1
-	};
-
-	const processKatexElement = (element: HTMLElement) => {
-		if (!element.parentNode) return;
-		if (element.hasAttribute('data-scrollbar-initialized')) return;
-
-		const container = document.createElement('div');
-		container.className = 'katex-display-container';
-		container.setAttribute('aria-label', 'scrollable container for formulas');
-
-		element.parentNode.insertBefore(container, element);
-		container.appendChild(element);
-
-		OverlayScrollbars(container, {
-			scrollbars: {
-				theme: 'scrollbar-base scrollbar-auto',
-				autoHide: 'leave',
-				autoHideDelay: 500,
-				autoHideSuspend: false
-			}
-		});
-
-		element.setAttribute('data-scrollbar-initialized', 'true');
-	};
-
-	const katexObserver = new IntersectionObserver((entries, observer) => {
-		entries.forEach(entry => {
-			if (entry.isIntersecting) {
-			processKatexElement(entry.target as HTMLElement);
-			observer.unobserve(entry.target);
-			}
-		});
-	}, katexObserverOptions);
-
-	katexElements.forEach(element => {
-		katexObserver.observe(element);
 	});
 }
 
@@ -367,6 +409,7 @@ function init() {
 	// disableAnimation()()		// TODO
 	loadTheme();
 	loadHue();
+    loadBgSettings(); // 初始化背景设置
 	initCustomScrollbar();
 	showBanner();
 }
@@ -375,18 +418,6 @@ function init() {
 init();
 
 const setup = () => {
-	// TODO: temp solution to change the height of the banner
-/*
-	window.swup.hooks.on('animation:out:start', () => {
-		const path = window.location.pathname
-		const body = document.querySelector('body')
-		if (path[path.length - 1] === '/' && !body.classList.contains('is-home')) {
-			body.classList.add('is-home')
-		} else if (path[path.length - 1] !== '/' && body.classList.contains('is-home')) {
-			body.classList.remove('is-home')
-		}
-	})
-*/
 	window.swup.hooks.on('link:click', () => {
 		// Remove the delay for the first time page load
 		document.documentElement.style.setProperty('--content-delay', '0ms')

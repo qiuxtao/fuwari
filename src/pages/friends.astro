@@ -1,0 +1,64 @@
+---
+import MainGridLayout from "../layouts/MainGridLayout.astro";
+import { siteConfig } from "../config";
+import FriendList from "../components/FriendList.svelte";
+
+// 1. 定义友链数据
+const friends = [
+  {
+    title: "薄荷の小屋",
+    url: "https://www.hoshiroko.com",
+    avatar: "https://api.hoshiroko.com/img/avatar.jpg",
+    description: "越是拼命往前伸手，渴望之物越是渐行渐远"
+  },
+  {
+    title: "夏沫花火zzz",
+    url: "https://1l1.icu",
+    avatar: "https://blog.1l1.icu/images/avatar.jpg",
+    description: "Keep doing,keep loving."
+  },
+  // 在这里继续添加更多好友...
+];
+---
+
+<MainGridLayout title="朋友们" description="我的朋友们">
+  <div class="flex w-full rounded-[var(--radius-large)] overflow-hidden relative min-h-32">
+    <div class="card-base z-10 px-9 py-6 relative w-full">
+      
+      <h1 class="text-2xl font-bold mb-4 text-black/90 dark:text-white/90">朋友们</h1>
+      
+      <FriendList client:only="svelte" friends={friends} />
+
+      <hr class="my-8 border-black/10 dark:border-white/10 dashed" />
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-black/75 dark:text-white/75">
+          
+          <div>
+              <h2 class="text-xl font-bold mb-4 text-[var(--primary)]">本站信息</h2>
+              <div class="text-sm leading-relaxed opacity-80">
+                  <div class="mb-2"><span class="font-bold">标题：</span>{siteConfig.title}</div>
+                  <div class="mb-2"><span class="font-bold">介绍：</span>嗨，别来无恙啊！</div>
+                  <div class="mb-2"><span class="font-bold">链接：</span>https://qiuxiaotao.com</div>
+                  <div><span class="font-bold">头像：</span>https://qiuxiaotao.com/avatar.jpg</div>
+              </div>
+          </div>
+
+          <div>
+            <h2 class="text-xl font-bold mb-4 text-[var(--primary)]">申请说明</h2>
+            <ul class="list-disc list-inside space-y-1 text-sm mb-4 opacity-80">
+                <li>无侵入性广告</li>
+                <li>支持 HTTPS</li>
+                <li>有原创内容（拒绝纯导航站）</li>
+                <li>接受本站镜像缓存图标</li>
+            </ul>
+            <p class="text-sm opacity-80">
+                如果你也想和我交换友链，欢迎随时联系我：
+                <a href="mailto:nya@qiuxiaotao.com" class="text-[var(--primary)] hover:underline font-bold">nya@qiuxiaotao.com</a>
+            </p>
+          </div>
+
+      </div>
+
+    </div>
+  </div>
+</MainGridLayout>

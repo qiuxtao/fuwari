@@ -25,7 +25,11 @@ define(vars)
 define({
   --primary: oklch(0.70 0.14 var(--hue)) oklch(0.75 0.14 var(--hue))
   --page-bg: oklch(0.95 0.01 var(--hue)) oklch(0.16 0.014 var(--hue))
+  
+  /* 默认卡片背景 (不透明) */
   --card-bg: white oklch(0.23 0.015 var(--hue))
+  /* 透明卡片背景定义 */
+  --card-bg-transparent: rgba(255, 255, 255, 0.75) unquote("oklch(0.23 0.015 var(--hue) / 0.75)")
 
   --btn-content: oklch(0.55 0.12 var(--hue)) oklch(0.75 0.1 var(--hue))
 
@@ -65,7 +69,10 @@ define({
   --link-hover: oklch(0.95 0.025 var(--hue)) oklch(0.40 0.08 var(--hue))
   --link-active: oklch(0.90 0.05 var(--hue)) oklch(0.35 0.07 var(--hue))
 
+  /* 默认面板背景 */
   --float-panel-bg: white oklch(0.19 0.015 var(--hue))
+  /* 透明面板背景定义 */
+  --float-panel-bg-transparent: rgba(255, 255, 255, 0.75) unquote("oklch(0.19 0.015 var(--hue) / 0.75)")
 
   --scrollbar-bg-light: black(0.4)
   --scrollbar-bg-hover-light: black(0.5)
@@ -96,3 +103,10 @@ define({
   --toc-width: calc((100vw - var(--page-width)) / 2 - 1rem)
   --toc-item-active: oklch(0.70 0.13 var(--hue)) oklch(0.35 0.07 var(--hue))
 })
+
+/* 核心修复：CSS层直接覆盖，防止JS执行延迟导致的闪烁 
+   当 HTML 标签带有 with-bg 类时，直接强制使用透明变量
+*/
+html.with-bg
+  --card-bg: var(--card-bg-transparent) !important
+  --float-panel-bg: var(--float-panel-bg-transparent) !important

@@ -1,7 +1,6 @@
 ---
 import type { MarkdownHeading } from "astro";
-import { siteConfig } from "../../config";
-import { url } from "../../utils/url-utils";
+import TOCList from "./TOCList.astro";
 
 interface Props {
 	class?: string;
@@ -10,255 +9,331 @@ interface Props {
 
 let { headings = [] } = Astro.props;
 
-let minDepth = 10;
-for (const heading of headings) {
-	minDepth = Math.min(minDepth, heading.depth);
-}
-
 const className = Astro.props.class;
-const isPostsRoute = Astro.url.pathname.startsWith(url("/posts/"));
 
 const removeTailingHash = (text: string) => {
 	let lastIndexOfHash = text.lastIndexOf("#");
 	if (lastIndexOfHash !== text.length - 1) {
 		return text;
 	}
-
 	return text.substring(0, lastIndexOfHash);
 };
 
-let heading1Count = 1;
+interface TocItem extends MarkdownHeading {
+	children: TocItem[];
+}
 
-const maxLevel = siteConfig.toc.depth;
+function buildToc(headings: MarkdownHeading[]): TocItem[] {
+	const toc: TocItem[] = [];
+	const parentStack: TocItem[] = [];
+
+	headings.forEach((h) => {
+		const item: TocItem = { ...h, text: removeTailingHash(h.text), children: [] };
+		
+		while (parentStack.length > 0 && parentStack[parentStack.length - 1].depth >= item.depth) {
+			parentStack.pop();
+		}
+
+		if (parentStack.length > 0) {
+			parentStack[parentStack.length - 1].children.push(item);
+		} else {
+			toc.push(item);
+		}
+		parentStack.push(item);
+	});
+	return toc;
+}
+
+const toc = buildToc(headings);
 ---
-{isPostsRoute &&
-<table-of-contents class:list={[className, "group"]}>
-    {headings.filter((heading) => heading.depth < minDepth + maxLevel).map((heading) =>
-            <a href={`#${heading.slug}`} class="px-2 flex gap-2 relative transition w-full min-h-9 rounded-xl
-        hover:bg-[var(--toc-btn-hover)] active:bg-[var(--toc-btn-active)] py-2
-    ">
-                <div class:list={["transition w-5 h-5 shrink-0 rounded-lg text-xs flex items-center justify-center font-bold",
-                    {
-                        "bg-[var(--toc-badge-bg)] text-[var(--btn-content)]": heading.depth == minDepth,
-                        "ml-4": heading.depth == minDepth + 1,
-                        "ml-8": heading.depth == minDepth + 2,
-                    }
-                ]}
-                >
-                    {heading.depth == minDepth && heading1Count++}
-                    {heading.depth == minDepth + 1 && <div class="transition w-2 h-2 rounded-[0.1875rem] bg-[var(--toc-badge-bg)]"></div>}
-                    {heading.depth == minDepth + 2 && <div class="transition w-1.5 h-1.5 rounded-sm bg-black/5 dark:bg-white/10"></div>}
-                </div>
-                <div class:list={["transition text-sm", {
-                    "text-50": heading.depth == minDepth || heading.depth == minDepth + 1,
-                    "text-30": heading.depth == minDepth + 2,
-                }]}>{removeTailingHash(heading.text)}</div>
-            </a>
-    )}
-    <div id="active-indicator" style="opacity: 0" class:list={[{'hidden': headings.length == 0}, "-z-10 absolute bg-[var(--toc-btn-hover)] left-0 right-0 rounded-xl transition-all " +
-        "group-hover:bg-transparent border-2 border-[var(--toc-btn-hover)] group-hover:border-[var(--toc-btn-active)] border-dashed"]}></div>
-</table-of-contents>}
+<table-of-contents class:list={[className, "group block relative z-0"]} id="toc-container">
+    <div class="relative" style="mask-image: none !important; -webkit-mask-image: none !important;">
+        <div id="toc-content">
+            <TOCList items={toc} />
+        </div>
+        <div id="active-indicator" class:list={[{'hidden': headings.length == 0}, 
+            "-z-10 absolute left-0 right-0 rounded-lg transition-all duration-200 " +
+            "bg-[var(--toc-btn-hover)] border-2 border-transparent " + 
+            "group-hover:bg-transparent group-hover:border-[var(--toc-btn-active)] group-hover:border-dashed"
+        ]}></div>
+    </div>
+</table-of-contents>
 
 <script>
+function generateTocHTML(items, level = 0) {
+    if (!items || items.length === 0) return '';
+    let html = `<div class="flex flex-col gap-0">`;
+    items.forEach((item, index) => {
+        const paddingLeft = `calc(0.75rem + ${level * 1}rem)`;
+        let badgeContent = '';
+        let badgeClass = "transition w-5 h-5 shrink-0 rounded-md text-xs flex items-center justify-center font-bold mt-[0.125rem]";
+        if (level === 0) {
+            badgeClass += " bg-[var(--toc-badge-bg)] text-[var(--btn-content)]";
+            badgeContent = `${index + 1}`;
+        } else if (level === 1) {
+            badgeContent = `<div class="transition w-1.5 h-1.5 rounded-[0.1875rem] bg-[var(--toc-badge-bg)]"></div>`;
+        } else {
+            badgeContent = `<div class="transition w-1 h-1 rounded-sm bg-black/5 dark:bg-white/10"></div>`;
+        }
+        let textClass = "transition text-sm break-words leading-tight mt-[0.125rem]";
+        if (level === 0 || level === 1) textClass += " text-50";
+        else textClass += " text-30";
+
+        html += `
+            <div class="flex flex-col relative group-item">
+                <a href="#${item.slug}" 
+                   class="flex gap-2 items-start relative transition w-full min-h-9 rounded-lg hover:bg-[var(--toc-btn-hover)] active:bg-[var(--toc-btn-active)] py-2 pr-2"
+                   style="padding-left: ${paddingLeft}">
+                    <div class="${badgeClass}">${badgeContent}</div>
+                    <div class="${textClass}">${item.text}</div>
+                </a>
+                ${generateTocHTML(item.children, level + 1)}
+            </div>
+        `;
+    });
+    html += `</div>`;
+    return html;
+}
+
+function buildTocData(headings) {
+    const toc = [];
+    const parentStack = [];
+    headings.forEach((h) => {
+        let text = h.text;
+        if (text.endsWith('#')) text = text.substring(0, text.length - 1);
+        const item = { ...h, text: text, children: [] };
+        while (parentStack.length > 0 && parentStack[parentStack.length - 1].depth >= item.depth) {
+            parentStack.pop();
+        }
+        if (parentStack.length > 0) {
+            parentStack[parentStack.length - 1].children.push(item);
+        } else {
+            toc.push(item);
+        }
+        parentStack.push(item);
+    });
+    return toc;
+}
+
 class TableOfContents extends HTMLElement {
-    tocEl: HTMLElement | null = null;
-    visibleClass = "visible";
-    observer: IntersectionObserver;
-    anchorNavTarget: HTMLElement | null = null;
-    headingIdxMap = new Map<string, number>();
-    headings: HTMLElement[] = [];
-    sections: HTMLElement[] = [];
     tocEntries: HTMLAnchorElement[] = [];
-    active: boolean[] = [];
+    headings: HTMLElement[] = [];
     activeIndicator: HTMLElement | null = null;
+    tocContent: HTMLElement | null = null;
+    ticking = false;
 
     constructor() {
         super();
-        this.observer = new IntersectionObserver(
-            this.markVisibleSection, { threshold: 0 }
-        );
-    };
+    }
 
-    markVisibleSection = (entries: IntersectionObserverEntry[]) => {
-        entries.forEach((entry) => {
-            const id = entry.target.children[0]?.getAttribute("id");
-            const idx = id ? this.headingIdxMap.get(id) : undefined;
-            if (idx != undefined)
-                this.active[idx] = entry.isIntersecting;
+    refreshTOC = () => {
+        const buffer = document.getElementById('toc-data-buffer');
+        this.tocContent = this.querySelector('#toc-content');
+        this.activeIndicator = this.querySelector('#active-indicator');
 
-            if (entry.isIntersecting && this.anchorNavTarget == entry.target.firstChild)
-                this.anchorNavTarget = null;
-        });
+        // 默认认为没有 TOC 数据
+        let hasTOC = false;
 
-        if (!this.active.includes(true))
-            this.fallback();
-        this.update();
-    };
-
-    toggleActiveHeading = () => {
-        let i = this.active.length - 1;
-        let min = this.active.length - 1, max = -1;
-        while (i >= 0 && !this.active[i]) {
-            this.tocEntries[i].classList.remove(this.visibleClass);
-            i--;
-        }
-        while (i >= 0 && this.active[i]) {
-            this.tocEntries[i].classList.add(this.visibleClass);
-            min = Math.min(min, i);
-            max = Math.max(max, i);
-            i--;
-        }
-        while (i >= 0) {
-            this.tocEntries[i].classList.remove(this.visibleClass);
-            i--;
-        }
-        if (min > max) {
-            this.activeIndicator?.setAttribute("style", `opacity: 0`);
+        if (buffer && buffer.dataset.headings) {
+            try {
+                const headings = JSON.parse(buffer.dataset.headings);
+                if (headings.length > 0) {
+                    hasTOC = true;
+                    const tocData = buildTocData(headings);
+                    const newHtml = generateTocHTML(tocData);
+                    if (this.tocContent) this.tocContent.innerHTML = newHtml;
+                    this.init(); 
+                } else {
+                    if (this.tocContent) this.tocContent.innerHTML = '';
+                }
+            } catch (e) {
+                console.error('Failed to update TOC', e);
+            }
         } else {
-            let parentOffset = this.tocEl?.getBoundingClientRect().top || 0;
-            let scrollOffset = this.tocEl?.scrollTop || 0;
-            let top = this.tocEntries[min].getBoundingClientRect().top - parentOffset + scrollOffset;
-            let bottom = this.tocEntries[max].getBoundingClientRect().bottom - parentOffset + scrollOffset;
-            this.activeIndicator?.setAttribute("style", `top: ${top}px; height: ${bottom - top}px`);
+            if (this.tocContent) this.tocContent.innerHTML = '';
         }
-    };
 
-    scrollToActiveHeading = () => {
-        // If the TOC widget can accommodate both the topmost
-        // and bottommost items, scroll to the topmost item. 
-        // Otherwise, scroll to the bottommost one.
+        this.toggleSidebarLayout(hasTOC);
+    }
 
-        if (this.anchorNavTarget || !this.tocEl) return;
-        const activeHeading =
-            document.querySelectorAll<HTMLDivElement>(`#toc .${this.visibleClass}`);
-        if (!activeHeading.length) return;
+    // 核心修改：分离“布局位置”和“内容显示”的逻辑
+    toggleSidebarLayout(hasTOC) {
+        const tocCard = this.closest('.toc-card');
+        const sidebarProfile = document.getElementById('sidebar-profile');
+        const sidebarWidgets = document.getElementById('sidebar-widgets');
+        const sidebar = document.getElementById('sidebar');
 
-        const topmost = activeHeading[0];
-        const bottommost = activeHeading[activeHeading.length - 1];
-        const tocHeight = this.tocEl.clientHeight;
+        // 1. 控制内容显示 (互斥)
+        // 有 TOC 就只显 TOC；没有 TOC 就显 Profile/Widgets
+        if (hasTOC) {
+            if (tocCard) tocCard.style.display = 'block';
+            if (sidebarProfile) sidebarProfile.style.display = 'none';
+            if (sidebarWidgets) sidebarWidgets.style.display = 'none';
+        } else {
+            if (tocCard) tocCard.style.display = 'none';
+            if (sidebarProfile) sidebarProfile.style.display = 'flex';
+            if (sidebarWidgets) sidebarWidgets.style.display = 'flex';
+        }
 
-        let top;
-        if (bottommost.getBoundingClientRect().bottom -
-            topmost.getBoundingClientRect().top < 0.9 * tocHeight)
-            top = topmost.offsetTop - 32;
-        else
-            top = bottommost.offsetTop - tocHeight * 0.8;
+        // 2. 控制 Grid 位置 (主页置顶，其他置底)
+        // 关键修复：不再依赖 hasTOC，而是依赖 URL
+        const path = window.location.pathname.replace(/\/$/, '');
+        const isHomePage = path === '' || path === '/index.html' || path === '/fuwari' || path === '/fuwari/index.html'; // 兼容可能的 base path
 
-        this.tocEl.scrollTo({
-            top,
-            left: 0,
-            behavior: "smooth",
-        });
-    };
-
-    update = () => {
-        requestAnimationFrame(() => {
-            this.toggleActiveHeading();
-            // requestAnimationFrame(() => {
-            this.scrollToActiveHeading();
-            // });
-        });
-    };
-
-    fallback = () => {
-        if (!this.sections.length) return;
-
-        for (let i = 0; i < this.sections.length; i++) {
-            let offsetTop = this.sections[i].getBoundingClientRect().top;
-            let offsetBottom = this.sections[i].getBoundingClientRect().bottom;
-
-            if (this.isInRange(offsetTop, 0, window.innerHeight)
-                || this.isInRange(offsetBottom, 0, window.innerHeight)
-                || (offsetTop < 0 && offsetBottom > window.innerHeight)) {                    
-                this.markActiveHeading(i);
+        if (isHomePage) {
+            // 主页：Sidebar 在第一行
+            if (sidebar) {
+                sidebar.classList.remove('row-start-2');
+                sidebar.classList.add('row-start-1');
             }
-            else if (offsetTop > window.innerHeight) break;
-        }
-    };
-
-    markActiveHeading = (idx: number)=> {
-        this.active[idx] = true;
-    };
-
-    handleAnchorClick = (event: Event) => {
-        const anchor = event
-            .composedPath()
-            .find((element) => element instanceof HTMLAnchorElement);
-
-        if (anchor) {
-            const id = decodeURIComponent(anchor.hash?.substring(1));
-            const idx = this.headingIdxMap.get(id);
-            if (idx !== undefined) {
-                this.anchorNavTarget = this.headings[idx];
-            } else {
-                this.anchorNavTarget = null;
+        } else {
+            // 所有非主页 (文章/归档/关于)：Sidebar 在第二行
+            if (sidebar) {
+                sidebar.classList.remove('row-start-1');
+                sidebar.classList.add('row-start-2');
             }
         }
-    };
+    }
 
-    isInRange(value: number, min: number, max: number) {
-        return min < value && value < max;
+    updateActiveHeading = () => {
+        const viewportHeight = window.innerHeight;
+        const readingLine = 100;
+
+        let activeIndex = -1;
+        let maxVisibleIndex = -1;
+
+        for (let i = this.headings.length - 1; i >= 0; i--) {
+            const heading = this.headings[i];
+            if (!heading) continue;
+            
+            const rect = heading.getBoundingClientRect();
+            if (rect.top <= readingLine) {
+                activeIndex = i;
+                break;
+            }
+        }
+
+        for (let i = 0; i < this.headings.length; i++) {
+            const heading = this.headings[i];
+            if (!heading) continue;
+            
+            const rect = heading.getBoundingClientRect();
+            if (rect.top < viewportHeight) {
+                maxVisibleIndex = i;
+            }
+        }
+
+        let min = activeIndex;
+        let max = maxVisibleIndex;
+
+        if (min === -1 && this.headings.length > 0) min = 0;
+        if (max < min) max = min;
+
+        this.updateUI(min, max);
+    }
+
+    updateUI(min: number, max: number) {
+        this.tocEntries.forEach((entry) => entry.classList.remove('active', 'text-[var(--primary)]', 'font-bold'));
+
+        if (min !== -1 && max !== -1) {
+            for (let i = min; i <= max; i++) {
+                const entry = this.tocEntries[i];
+                if (entry) entry.classList.add('active', 'text-[var(--primary)]', 'font-bold');
+            }
+
+            const minEntry = this.tocEntries[min];
+            const maxEntry = this.tocEntries[max];
+
+            if (this.activeIndicator && minEntry && maxEntry) {
+                this.activeIndicator.classList.remove("hidden");
+                const parent = this.activeIndicator.offsetParent;
+                if (parent) {
+                    const parentRect = parent.getBoundingClientRect();
+                    const minRect = minEntry.getBoundingClientRect();
+                    const maxRect = maxEntry.getBoundingClientRect();
+                    
+                    const top = minRect.top - parentRect.top;
+                    const height = maxRect.bottom - minRect.top;
+                    
+                    this.activeIndicator.style.top = `${top}px`;
+                    this.activeIndicator.style.height = `${height}px`;
+                }
+            }
+        } else if (this.activeIndicator) {
+            this.activeIndicator.classList.add("hidden");
+        }
+    }
+
+    handleAnchorClick = (event: Event) => {};
+
+    onScroll = () => {
+        if (!this.ticking) {
+            window.requestAnimationFrame(() => {
+                this.updateActiveHeading();
+                this.ticking = false;
+            });
+            this.ticking = true;
+        }
+    }
+
+    init() {
+        this.activeIndicator = this.querySelector("#active-indicator");
+        this.tocEntries = Array.from(this.querySelectorAll<HTMLAnchorElement>("a[href^='#']"));
+
+        if (this.tocEntries.length === 0) {
+            if (this.activeIndicator) this.activeIndicator.classList.add('hidden');
+            return;
+        }
+
+        this.headings = this.tocEntries.map(entry => {
+            const id = decodeURIComponent(entry.hash?.substring(1));
+            return document.getElementById(id);
+        }).filter((h): h is HTMLElement => h instanceof HTMLElement);
+
+        window.removeEventListener("scroll", this.onScroll);
+        window.addEventListener("scroll", this.onScroll);
+        this.addEventListener("click", this.handleAnchorClick);
+
+        this.updateActiveHeading();
     };
 
     connectedCallback() {
-        // wait for the onload animation to finish, which makes the `getBoundingClientRect` return correct values
-        const element = document.querySelector('.prose');
-        if (element) {
-            element.addEventListener('animationend', () => {
-                this.init();
-            }, { once: true });
-        } else {
-            console.debug('Animation element not found');
+        requestAnimationFrame(() => {
+            this.init();
+            const buffer = document.getElementById('toc-data-buffer');
+            let hasData = false;
+            if (buffer && buffer.dataset.headings) {
+                hasData = JSON.parse(buffer.dataset.headings).length > 0;
+            }
+            this.toggleSidebarLayout(hasData);
+        });
+        
+    const registerHooks = () => {
+        // 再次检查 swup 是否存在，避免报错
+        if (window.swup) {
+            window.swup.hooks.on('content:replace', () => {
+                this.refreshTOC();
+            });
+            
+            // 补充：确保每次切换后重新计算一次激活状态，防止高亮滞后
+            window.swup.hooks.on('content:replace', () => {
+                 setTimeout(() => {
+                    this.updateActiveHeading();
+                 }, 100); // 稍微延迟，确保 DOM 渲染完毕
+            });
         }
     };
 
-    init() {
-        this.tocEl = document.getElementById(
-            "toc-inner-wrapper"
-        );
-
-        if (!this.tocEl) return;
-
-        this.tocEl.addEventListener("click", this.handleAnchorClick, {
-            capture: true,
-        });
-
-        this.activeIndicator = document.getElementById("active-indicator");
-
-        this.tocEntries = Array.from(
-            document.querySelectorAll<HTMLAnchorElement>("#toc a[href^='#']")
-        );
-
-        if (this.tocEntries.length === 0) return;
-
-        this.sections = new Array(this.tocEntries.length);
-        this.headings = new Array(this.tocEntries.length);
-        for (let i = 0; i < this.tocEntries.length; i++) {
-            const id = decodeURIComponent(this.tocEntries[i].hash?.substring(1));
-            const heading = document.getElementById(id);
-            const section = heading?.parentElement;
-            if (heading instanceof HTMLElement && section instanceof HTMLElement) {
-                this.headings[i] = heading;
-                this.sections[i] = section;
-                this.headingIdxMap.set(id, i);
-            }
-        }
-        this.active = new Array(this.tocEntries.length).fill(false);
-
-        this.sections.forEach((section) =>
-            this.observer.observe(section)
-        );
-
-        this.fallback();
-        this.update();
+    if (window.swup) {
+        registerHooks();
+    } else {
+        document.addEventListener('swup:enable', registerHooks);
+    }
     };
 
     disconnectedCallback() {
-        this.sections.forEach((section) =>
-            this.observer.unobserve(section)
-        );
-        this.observer.disconnect();
-        this.tocEl?.removeEventListener("click", this.handleAnchorClick);
+        window.removeEventListener("scroll", this.onScroll);
+        this.removeEventListener("click", this.handleAnchorClick);
     };
 }
 
