@@ -32,26 +32,27 @@ const description = "秋晓桃の会议室";
     </div>
 
     <style>
-        /* --- 核心修复：强制移除父级 Transform 以启用毛玻璃 --- */
-        /* 使用 :global 选择器穿透到父级组件 */
-        
-        /* 1. 针对加载动画期间 */
-        :global(#content-wrapper.onload-animation) {
+        /* --- 终极修复方案：核弹级样式重置 --- */
+        /* 强制覆盖所有父级容器的动画和过渡，确保毛玻璃有稳定的渲染环境 */
+        :global(.meeting-force-override) {
             transform: none !important;
-            animation: pure-fade-in 0.6s cubic-bezier(0.25, 0.8, 0.25, 1) forwards !important;
+            filter: none !important;
+            perspective: none !important;
+            overflow: visible !important;
+            mask: none !important;
+            clip-path: none !important;
+            will-change: auto !important;
+            
+            /* ★关键修改★：禁止一切动画和过渡，强制不透明度为 1 */
+            animation: none !important;
+            transition: none !important;
+            opacity: 1 !important;
         }
 
-        /* 2. 针对 Swup 容器和通用状态 (当脚本添加了 is-meeting-page 类时生效) */
-        :global(body.is-meeting-page #swup-container),
-        :global(body.is-meeting-page #content-wrapper) {
-            transform: none !important;
-            filter: none !important; /* 有些动画会用 filter，这也会破坏毛玻璃 */
-            will-change: auto !important; /* 防止浏览器优化创建新层 */
-        }
-
-        @keyframes pure-fade-in {
-            0% { opacity: 0; }
-            100% { opacity: 1; }
+        /* 专门针对 MainGridLayout 中的 onload-animation 类进行屏蔽 */
+        :global(.meeting-force-override.onload-animation) {
+            animation: none !important;
+            opacity: 1 !important;
         }
 
         /* --- 元素样式 --- */
@@ -67,7 +68,6 @@ const description = "秋晓桃の会议室";
             background-color: rgba(0, 0, 0, 0.25);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
-            
             border: 1px solid rgba(255, 255, 255, 0.2);
             border-radius: 12px;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
@@ -76,8 +76,6 @@ const description = "秋晓桃の会议室";
             transition: width 0.4s cubic-bezier(0.25, 0.8, 0.25, 1),
                         background-color 0.4s, border-color 0.4s, box-shadow 0.4s;
             margin-bottom: 20px;
-            /* 强制独立渲染层并不是总有好处，这里如果父级 fix 了，可以去掉 translateZ */
-            /* transform: translateZ(0); */ 
         }
 
         #meetingInput::placeholder {
@@ -91,7 +89,6 @@ const description = "秋晓桃の会议室";
             height: 50px;
             border: none;
             border-radius: 12px;
-            /* 修改：稍微降低不透明度，让毛玻璃更明显 (从 0.9 -> 0.75) */
             background: rgba(255, 255, 255, 0.75);
             backdrop-filter: blur(8px);
             -webkit-backdrop-filter: blur(8px);
@@ -195,7 +192,8 @@ const description = "秋晓桃の会议室";
         :global(.history-header) { display: flex; justify-content: space-between; margin-bottom: 10px; }
         :global(.history-title) { font-size: 14px; color: rgba(255,255,255,0.85); text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
         :global(.history-clear-all-btn) { 
-            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
             color: #ddd; border-radius: 12px; font-size: 12px; padding: 2px 10px; cursor: pointer; transition: all 0.2s;
         }
         :global(.history-clear-all-btn:hover) { background: #fff; color: #000; }
@@ -232,6 +230,79 @@ const description = "秋晓桃の会议室";
         (function() {
             const STORAGE_KEY = 'jitsiMeetingHistory';
             const MAX_HISTORY_ITEMS = 8;
+            
+            // 定义需要强制修复的容器 ID
+            // main-grid: 过渡效果会导致 stacking context
+            // content-wrapper: 加载动画(opacity)会导致 backdrop-filter 失效
+            const TARGET_IDS = ['swup-container', 'content-wrapper', 'main-grid'];
+            const FORCE_CLASS = 'meeting-force-override';
+
+            // 工具：确保背景图可见（防止 Banner 加载动画卡在 opacity-0 导致毛玻璃失效）
+            function ensureBannerVisible() {
+                const banner = document.getElementById('banner');
+                if (banner) {
+                    banner.classList.remove('opacity-0');
+                    banner.style.opacity = '1';
+                    banner.style.transition = 'none';
+
+                    const bannerWrapper = document.getElementById('banner-wrapper');
+                    if (bannerWrapper) {
+                        bannerWrapper.style.opacity = '1';
+                        bannerWrapper.style.transition = 'none';
+                    }
+                }
+            }
+
+            // 工具：给关键容器添加强制类，并移除原有的动画类
+            function applyForceStyles() {
+                TARGET_IDS.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        el.classList.add(FORCE_CLASS);
+                        // ★★★ 核心修复：移除原有的动画类名 ★★★
+                        // 这比仅仅添加 override 类更安全，防止 CSS 优先级竞争
+                        el.classList.remove('onload-animation');
+                        el.classList.remove('transition-swup-fade');
+                        
+                        // 双重保险：直接修改行内样式
+                        el.style.setProperty('transform', 'none', 'important');
+                        el.style.setProperty('overflow', 'visible', 'important');
+                        el.style.setProperty('transition', 'none', 'important');
+                        el.style.setProperty('animation', 'none', 'important');
+                        el.style.setProperty('opacity', '1', 'important');
+                    }
+                });
+                document.body.classList.add('is-meeting-page'); 
+                
+                // ★★★ 核心修复：强制显示背景图 ★★★
+                ensureBannerVisible();
+                requestAnimationFrame(() => {
+                    ensureBannerVisible();
+                    // 多次尝试，对抗浏览器的渲染队列
+                    requestAnimationFrame(ensureBannerVisible);
+                });
+            }
+
+            // 工具：清理强制类
+            function clearForceStyles() {
+                TARGET_IDS.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        el.classList.remove(FORCE_CLASS);
+                        // 清理行内样式
+                        el.style.removeProperty('transform');
+                        el.style.removeProperty('overflow');
+                        el.style.removeProperty('transition');
+                        el.style.removeProperty('animation');
+                        el.style.removeProperty('opacity');
+                        
+                        // 注意：我们不加回 'onload-animation'，因为离开页面时页面结构会被 swup 替换，
+                        // 或者如果是在当前页导航，也不需要再次触发加载动画。
+                    }
+                });
+                document.body.classList.remove('is-meeting-page');
+                document.body.classList.remove('meeting-mode-focused');
+            }
 
             // 初始化函数
             function initMeetingRoom() {
@@ -239,21 +310,20 @@ const description = "秋晓桃の会议室";
                 const joinBtn = document.getElementById('joinButton');
                 const wrapper = document.querySelector('.meeting-wrapper');
                 
-                // 检查是否在会议室页面
+                // 1. 检查环境
                 if (!input || !wrapper) {
-                    document.body.classList.remove('is-meeting-page');
-                    document.body.classList.remove('meeting-mode-focused');
+                    clearForceStyles(); // 不在会议页时清理
                     return;
                 }
 
-                // 防止重复初始化
+                // 2. ★★★ 核心修复：立即应用样式 ★★★
+                applyForceStyles();
+
+                // 3. 防止重复初始化事件监听
                 if (wrapper.dataset.init === 'true') return;
                 wrapper.dataset.init = 'true';
 
-                // 核心：标记当前为会议室页面 -> 触发 CSS 修复毛玻璃
-                document.body.classList.add('is-meeting-page');
-
-                // 1. 聚焦效果
+                // --- 事件监听 (保持不变) ---
                 input.onfocus = () => {
                     wrapper.classList.add('is-focused');
                     document.body.classList.add('meeting-mode-focused');
@@ -262,18 +332,13 @@ const description = "秋晓桃の会议室";
                     wrapper.classList.remove('is-focused');
                     document.body.classList.remove('meeting-mode-focused');
                 };
-
-                // 2. 回车加入
                 input.onkeydown = (e) => {
                     if (e.key === 'Enter') joinMeeting();
                 };
-
-                // 3. 按钮点击
                 joinBtn.onclick = joinMeeting;
-
-                // 加载历史
+                
                 loadHistory();
-
+                
                 // 注入 Shake 动画样式
                 if (!document.getElementById('shake-style')) {
                     const s = document.createElement('style');
@@ -372,11 +437,18 @@ const description = "秋晓桃の会议室";
             }
 
             // --- 启动逻辑 ---
-            // 直接运行，因为现在脚本在 MainGridLayout 内部，
-            // 每次页面被 Swup 替换插入 DOM 后，脚本都会自动重新执行。
+            // 1. 立即执行（处理 Swup 导航）
             initMeetingRoom();
 
-            // 监听 swup 事件清理状态 (从会议页离开时)
+            // 2. 页面加载完成后再次执行（处理硬刷新）
+            window.addEventListener('load', () => {
+                const wrapper = document.querySelector('.meeting-wrapper');
+                if (wrapper) {
+                    applyForceStyles();
+                }
+            });
+
+            // 监听 swup 事件清理状态 (确保离开页面时类名被移除)
             if (window.swup) {
                 window.swup.hooks.on('visit:start', () => {
                     document.body.classList.remove('meeting-mode-focused');
@@ -387,7 +459,7 @@ const description = "秋晓桃の会议室";
                      window.swup.hooks.on('visit:start', () => {
                         document.body.classList.remove('meeting-mode-focused');
                         document.body.classList.remove('is-meeting-page');
-                    });
+                     });
                 });
             }
 
