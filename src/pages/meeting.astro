@@ -308,12 +308,23 @@ const description = "秋晓桃の会议室";
     </style>
 
     <style is:global>
-        /* [新增] 当 Body 加上 meeting-ready 类时，激活所有元素的模糊效果 */
+        /* 优化：给 backdrop-filter 加一个较快的 transition
+           这样当移除 .meeting-ready 类时，模糊会先快速消失，减轻浏览器渲染压力，
+           让随后的页面切出动画不卡顿。
+        */
+        #meetingInput, 
+        .history-item,
+        .history-clear-all-btn, 
+        .download-button {
+             transition: backdrop-filter 0.3s ease, background-color 0.3s ease, transform 0.3s ease !important;
+        }
+
         body.meeting-ready #meetingInput,
         body.meeting-ready .history-item {
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
         }
+        
         body.meeting-ready .history-clear-all-btn,
         body.meeting-ready .download-button {
             backdrop-filter: blur(4px);
@@ -341,11 +352,93 @@ const description = "秋晓桃の会议室";
             const STORAGE_KEY = 'jitsiMeetingHistory';
             const MAX_HISTORY_ITEMS = 8;
             
-            const TARGET_IDS = ['swup-container', 'content-wrapper', 'main-grid'];
+            // 需要控制的元素列表
+            const CONTAINER_ID = 'swup-container';
+            const CONTENT_IDS = ['content-wrapper', 'main-grid'];
+            const TARGET_IDS = [CONTAINER_ID, ...CONTENT_IDS];
+            
             const FORCE_CLASS = 'meeting-force-override';
             
-            // 动画延迟时间 (ms)，需要比 transition.css 中的动画时间稍长
+            // 动画延迟时间 (ms)，保持与 transition.css 配合
             const ANIMATION_DELAY = 600;
+            
+            let animationTimer = null;
+
+            // ---------------------------------------------------------
+            // 核心逻辑函数
+            // ---------------------------------------------------------
+
+            function unlockElement(id) {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.classList.remove(FORCE_CLASS);
+                    el.style.removeProperty('transform');
+                    el.style.removeProperty('overflow');
+                    el.style.removeProperty('transition');
+                    el.style.removeProperty('animation');
+                    el.style.removeProperty('opacity');
+                }
+            }
+
+            // [场景A] 页面刚加载完动画，准备进入“毛玻璃常驻模式”
+            // 此时我们要锁死所有元素，防止轻微的像素抖动，并开启高清毛玻璃
+            function lockDownAllStyles() {
+                TARGET_IDS.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        el.classList.add(FORCE_CLASS);
+                        // 强制锁定，不许动
+                        el.style.setProperty('transform', 'none', 'important');
+                        el.style.setProperty('overflow', 'visible', 'important');
+                        el.style.setProperty('transition', 'none', 'important');
+                        el.style.setProperty('animation', 'none', 'important');
+                        el.style.setProperty('opacity', '1', 'important');
+                    }
+                });
+                document.body.classList.add('is-meeting-page'); 
+                
+                // 确保 Banner 不会突然消失
+                ensureBannerVisible();
+                requestAnimationFrame(() => {
+                    ensureBannerVisible();
+                    requestAnimationFrame(ensureBannerVisible);
+                });
+            }
+
+            // [场景B] 用户点击链接准备离开 (切出)
+            // 这是修复问题的关键：
+            // 1. 移除 body 上的毛玻璃类（减少显卡负担，让切出更丝滑）
+            // 2. 解锁最外层容器（允许 Swup 把它变透明）
+            // 3. *保留* 内部内容的锁定（防止内部元素误判重新播放入场动画）
+            function prepareForExit() {
+                // 1. 如果还在等待动画加载，直接取消定时器，防止冲突
+                if (animationTimer) {
+                    clearTimeout(animationTimer);
+                    animationTimer = null;
+                }
+
+                // 2. 移除高清毛玻璃，恢复普通渲染性能
+                document.body.classList.remove('meeting-ready');
+
+                // 3. 【关键】只解锁最外层容器，允许它被 Swup 淡出
+                unlockElement(CONTAINER_ID);
+
+                // 注意：这里故意 *不* 解锁 CONTENT_IDS (content-wrapper)。
+                // 这样内容区域会保持静止 (opacity: 1, animation: none)，
+                // 乖乖地随着外层容器一起淡出，而不会鬼畜地重播 fade-in-up 动画。
+
+                // 4. 清理页面标记
+                document.body.classList.remove('is-meeting-page');
+                document.body.classList.remove('meeting-mode-focused');
+            }
+
+            // [场景C] 发生错误或强制重置时，清理一切
+            function clearAllForceStyles() {
+                TARGET_IDS.forEach(id => unlockElement(id));
+                document.body.classList.remove('is-meeting-page');
+                document.body.classList.remove('meeting-mode-focused');
+                document.body.classList.remove('meeting-ready');
+            }
 
             function ensureBannerVisible() {
                 const banner = document.getElementById('banner');
@@ -362,51 +455,9 @@ const description = "秋晓桃の会议室";
                 }
             }
 
-            // 锁定样式（解决动画后的抖动/层级问题）
-            function applyForceStyles() {
-                TARGET_IDS.forEach(id => {
-                    const el = document.getElementById(id);
-                    if (el) {
-                        el.classList.add(FORCE_CLASS);
-                        
-                        // [关键修改] 不再移除动画类，允许通用动画播放
-                        // el.classList.remove('onload-animation');
-                        // el.classList.remove('transition-swup-fade');
-                        
-                        el.style.setProperty('transform', 'none', 'important');
-                        el.style.setProperty('overflow', 'visible', 'important');
-                        el.style.setProperty('transition', 'none', 'important');
-                        el.style.setProperty('animation', 'none', 'important');
-                        el.style.setProperty('opacity', '1', 'important');
-                    }
-                });
-                document.body.classList.add('is-meeting-page'); 
-                
-                ensureBannerVisible();
-                requestAnimationFrame(() => {
-                    ensureBannerVisible();
-                    requestAnimationFrame(ensureBannerVisible);
-                });
-            }
-
-            function clearForceStyles() {
-                TARGET_IDS.forEach(id => {
-                    const el = document.getElementById(id);
-                    if (el) {
-                        el.classList.remove(FORCE_CLASS);
-                        el.style.removeProperty('transform');
-                        el.style.removeProperty('overflow');
-                        el.style.removeProperty('transition');
-                        el.style.removeProperty('animation');
-                        el.style.removeProperty('opacity');
-                    }
-                });
-                document.body.classList.remove('is-meeting-page');
-                document.body.classList.remove('meeting-mode-focused');
-                
-                // [新增] 移除就绪状态，防止切出时带有模糊效果导致卡顿
-                document.body.classList.remove('meeting-ready');
-            }
+            // ---------------------------------------------------------
+            // 业务逻辑
+            // ---------------------------------------------------------
 
             function initMeetingRoom() {
                 const input = document.getElementById('meetingInput');
@@ -414,19 +465,24 @@ const description = "秋晓桃の会议室";
                 const wrapper = document.querySelector('.meeting-wrapper');
                 
                 if (!input || !wrapper) {
-                    clearForceStyles();
+                    // 找不到元素，说明环境异常，全清理
+                    clearAllForceStyles();
                     return;
                 }
 
-                // [修改] 先重置状态，延迟后再锁定样式和开启模糊
-                document.body.classList.remove('meeting-ready');
-                
-                setTimeout(() => {
-                    applyForceStyles();
-                    // 动画结束后，添加 meeting-ready 类，触发 CSS 中的 backdrop-filter 渐入
-                    document.body.classList.add('meeting-ready');
+                // 1. 初始化：清理旧状态
+                prepareForExit(); // 借用这个函数清理一下定时器和body状态
+                clearAllForceStyles(); // 确保开始时是干净的，允许播放入场动画
+
+                // 2. 延迟锁定：等入场动画播完后，再上锁并开启毛玻璃
+                animationTimer = setTimeout(() => {
+                    if (document.body.contains(wrapper)) {
+                        lockDownAllStyles();
+                        document.body.classList.add('meeting-ready');
+                    }
                 }, ANIMATION_DELAY);
 
+                // 3. 绑定交互事件
                 if (wrapper.dataset.init === 'true') return;
                 wrapper.dataset.init = 'true';
 
@@ -453,41 +509,34 @@ const description = "秋晓桃の会议室";
                 }
             }
 
-            // ... loadHistory, saveToHistory 等函数保持不变 ...
+            // ... 下面这些函数保持不变 ...
             function loadHistory() {
                 const container = document.getElementById('historyContainer');
                 if (!container) return;
-
                 const history = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
                 container.innerHTML = '';
                 if (history.length > 0) {
                     const header = document.createElement('div');
                     header.className = 'history-header';
-                    
                     const title = document.createElement('h3');
                     title.className = 'history-title';
                     title.textContent = '最近的会议';
-                    
                     const clearBtn = document.createElement('button');
                     clearBtn.className = 'history-clear-all-btn';
                     clearBtn.textContent = '全部清除';
                     clearBtn.onclick = clearAllHistory;
-
                     header.appendChild(title);
                     header.appendChild(clearBtn);
                     container.appendChild(header);
-
                     history.forEach(name => {
                         const item = document.createElement('div');
                         item.className = 'history-item';
-                        
                         const span = document.createElement('span');
                         span.textContent = name;
                         span.style.flexGrow = '1';
                         span.style.cursor = 'pointer';
                         span.style.textAlign = 'left';
                         span.onclick = () => goToMeeting(name);
-
                         const delBtn = document.createElement('button');
                         delBtn.className = 'history-delete-btn';
                         delBtn.innerHTML = '&times;';
@@ -495,14 +544,12 @@ const description = "秋晓桃の会议室";
                             e.stopPropagation();
                             deleteFromHistory(name);
                         };
-
                         item.appendChild(span);
                         item.appendChild(delBtn);
                         container.appendChild(item);
                     });
                 }
             }
-
             function saveToHistory(name) {
                 let history = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
                 history = history.filter(i => i !== name);
@@ -510,19 +557,16 @@ const description = "秋晓桃の会议室";
                 history = history.slice(0, MAX_HISTORY_ITEMS);
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
             }
-
             function deleteFromHistory(name) {
                 let history = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
                 history = history.filter(i => i !== name);
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
                 loadHistory();
             }
-
             function clearAllHistory() {
                 localStorage.removeItem(STORAGE_KEY);
                 loadHistory();
             }
-
             function goToMeeting(name) {
                 const val = name?.trim();
                 if (val) {
@@ -532,7 +576,6 @@ const description = "秋晓桃の会议室";
                 }
                 return false;
             }
-
             function joinMeeting() {
                 const input = document.getElementById('meetingInput');
                 if (!input) return;
@@ -541,28 +584,17 @@ const description = "秋晓桃の会议室";
                     setTimeout(() => input.style.animation = '', 500);
                 }
             }
-            // ... 结束 ...
 
+            // 初始化入口
             initMeetingRoom();
-            
-            // [注意] load 事件这里也需要延迟处理，或者直接由 initMeetingRoom 处理即可
-            window.addEventListener('load', () => {
-                // 原来的逻辑是立即应用 forceStyles，现在交给 initMeetingRoom 中的 setTimeout 统一处理
-            });
 
+            // Swup 生命周期钩子
+            // visit:start 时执行 prepareForExit（解锁外层，锁死内层，实现完美切出）
             if (window.swup) {
-                window.swup.hooks.on('visit:start', () => {
-                    document.body.classList.remove('meeting-mode-focused');
-                    document.body.classList.remove('is-meeting-page');
-                    document.body.classList.remove('meeting-ready'); // 清理
-                });
+                window.swup.hooks.on('visit:start', prepareForExit);
             } else {
                 document.addEventListener('swup:enable', () => {
-                     window.swup.hooks.on('visit:start', () => {
-                        document.body.classList.remove('meeting-mode-focused');
-                        document.body.classList.remove('is-meeting-page');
-                        document.body.classList.remove('meeting-ready'); // 清理
-                    });
+                     window.swup.hooks.on('visit:start', prepareForExit);
                 });
             }
 
