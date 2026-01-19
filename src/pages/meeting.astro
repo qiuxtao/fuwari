@@ -10,7 +10,7 @@ const description = "秋晓桃の会议室";
 
     <div id="meeting-overlay" class="fixed inset-0 pointer-events-none transition-colors duration-500 z-[90]"></div>
 
-    <div id="meeting-app" class="meeting-wrapper relative w-full flex flex-col items-center justify-center min-h-[70vh] py-10 z-[100]">
+    <div id="meeting-app" class="meeting-wrapper relative w-full flex flex-col items-center justify-center min-h-[60vh] z-[100]">
         
         <div class="main-content">
             <div class="input-group">
@@ -33,7 +33,7 @@ const description = "秋晓桃の会议室";
 
     <style>
         /* =========================================
-           1. 终极修复方案 (保留原逻辑)
+           1. 终极修复方案
            ========================================= */
         :global(.meeting-force-override) {
             transform: none !important;
@@ -53,10 +53,8 @@ const description = "秋晓桃の会议室";
         }
 
         /* =========================================
-           2. 核心样式移植 (源自 HTML)
+           2. 核心样式移植
            ========================================= */
-        
-        /* 变量定义，保持一致性 */
         :root {
             --text-color: #ffffff;
             --text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
@@ -69,6 +67,8 @@ const description = "秋晓桃の会议室";
             align-items: center;
             width: 90%;
             max-width: 450px;
+            /* 视觉微调：让内容在垂直居中的基础上稍微往上提一点 */
+            margin-bottom: 2vh; 
         }
 
         .input-group {
@@ -78,7 +78,7 @@ const description = "秋晓桃の会议室";
             width: 100%;
         }
 
-        /* 输入框样式 - 1:1 还原 HTML */
+        /* 输入框样式 */
         #meetingInput {
             width: 300px;
             height: 50px;
@@ -95,7 +95,6 @@ const description = "秋晓桃の会议室";
             color: var(--text-color);
             outline: none;
             
-            /* 过渡效果 */
             transition: all var(--transition-speed) cubic-bezier(0.25, 0.8, 0.25, 1);
             margin-bottom: 20px;
             box-sizing: border-box;
@@ -106,16 +105,14 @@ const description = "秋晓桃の会议室";
             transition: color 0.3s ease;
         }
 
-        /* 按钮样式 - 1:1 还原 HTML (更亮的白色) */
+        /* 按钮样式 */
         #joinButton {
             width: 200px;
             height: 50px;
             border: none;
             border-radius: 12px;
-            
-            background: rgba(255, 255, 255, 0.9); /* HTML 使用 0.9 */
+            background: rgba(255, 255, 255, 0.9);
             color: #333;
-            
             font-size: 18px;
             font-weight: 600;
             cursor: pointer;
@@ -133,10 +130,8 @@ const description = "秋晓桃の会议室";
         }
 
         /* =========================================
-           3. 聚焦模式 (Is Focused)
+           3. 聚焦模式
            ========================================= */
-        
-        /* 聚焦时输入框变宽、变深 */
         .meeting-wrapper.is-focused #meetingInput {
             width: 100%;
             background-color: rgba(0, 0, 0, 0.5); 
@@ -149,7 +144,6 @@ const description = "秋晓桃の会议室";
             color: transparent;
         }
 
-        /* 聚焦时其他元素虚化 (保留 Astro 原有的优化体验) */
         .meeting-wrapper.is-focused .history-container,
         .meeting-wrapper.is-focused .button-container {
             opacity: 0.3;
@@ -163,18 +157,15 @@ const description = "秋晓桃の会议室";
         }
 
         /* =========================================
-           4. 历史记录 (History) - 1:1 还原 HTML
+           4. 历史记录
            ========================================= */
-        
         .history-container {
             width: 100%;
             display: flex;
             flex-direction: column;
             gap: 8px;
-            /* HTML margin-top 25px vs Astro original logic, using HTML's logic via mt-6 class or here */
         }
 
-        /* 全局样式穿透，因为历史记录是 JS 生成的 */
         :global(.history-header) {
             display: flex;
             justify-content: space-between;
@@ -195,7 +186,7 @@ const description = "秋晓桃の会议室";
             backdrop-filter: blur(4px);
             -webkit-backdrop-filter: blur(4px);
             border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 16px; /* HTML 是 16px */
+            border-radius: 16px;
             color: rgba(255, 255, 255, 0.8);
             font-size: 12px;
             cursor: pointer;
@@ -271,9 +262,8 @@ const description = "秋晓桃の会议室";
         }
 
         /* =========================================
-           5. 下载按钮区 (Download Buttons)
+           5. 下载按钮区
            ========================================= */
-        
         .button-container {
             display: flex;
             justify-content: center;
@@ -312,33 +302,19 @@ const description = "秋晓桃の会议室";
     </style>
 
     <style is:global>
-        /* 全局聚焦效果逻辑：
-           这里控制背景图的模糊（#bg-box）和遮罩层的显示 
-        */
-
         #bg-box {
             transition: filter 0.6s cubic-bezier(0.25, 0.8, 0.25, 1), transform 0.6s;
             will-change: filter, transform;
         }
 
-        /* 聚焦时背景模糊放大 */
         body.meeting-mode-focused #bg-box {
-            filter: blur(15px) !important; /* HTML 是 15px */
+            filter: blur(15px) !important;
             transform: scale(1.05);
         }
         
-        /* 聚焦时显示深色遮罩 */
         body.meeting-mode-focused #meeting-overlay {
-            background-color: rgba(0, 0, 0, 0.4); /* 对应 HTML .overlay 在 focused 时的颜色 */
+            background-color: rgba(0, 0, 0, 0.4);
             opacity: 1;
-        }
-
-        /* 强制隐藏底栏 (按照要求) */
-        body.is-meeting-page .footer {
-            display: none !important;
-        }
-        body:has(#meeting-app) .footer {
-            display: none !important;
         }
     </style>
 
@@ -347,7 +323,6 @@ const description = "秋晓桃の会议室";
             const STORAGE_KEY = 'jitsiMeetingHistory';
             const MAX_HISTORY_ITEMS = 8;
             
-            // 修复逻辑配置
             const TARGET_IDS = ['swup-container', 'content-wrapper', 'main-grid'];
             const FORCE_CLASS = 'meeting-force-override';
 
@@ -421,7 +396,6 @@ const description = "秋晓桃の会议室";
                 if (wrapper.dataset.init === 'true') return;
                 wrapper.dataset.init = 'true';
 
-                // 事件监听
                 input.onfocus = () => {
                     wrapper.classList.add('is-focused');
                     document.body.classList.add('meeting-mode-focused');
@@ -437,7 +411,6 @@ const description = "秋晓桃の会议室";
                 
                 loadHistory();
                 
-                // Shake 动画
                 if (!document.getElementById('shake-style')) {
                     const s = document.createElement('style');
                     s.id = 'shake-style';
@@ -534,7 +507,6 @@ const description = "秋晓桃の会议室";
                 }
             }
 
-            // 启动逻辑
             initMeetingRoom();
 
             window.addEventListener('load', () => {
