@@ -8,32 +8,33 @@ const description = "秋晓桃の会议室";
 <MainGridLayout title={title} description={description}>
     <link slot="head" href="https://api.hoshiroko.com/libs/fontawesome/css/all.min.css" rel="stylesheet">
 
-    <div id="meeting-overlay" class="fixed inset-0 bg-black/60 z-[90] opacity-0 pointer-events-none transition-opacity duration-500"></div>
+    <div id="meeting-overlay" class="fixed inset-0 pointer-events-none transition-colors duration-500 z-[90]"></div>
 
-    <div id="meeting-app" class="meeting-wrapper relative w-full flex flex-col items-center justify-center min-h-[60vh] py-10 z-[100]">
+    <div id="meeting-app" class="meeting-wrapper relative w-full flex flex-col items-center justify-center min-h-[70vh] py-10 z-[100]">
         
-        <div class="main-content w-full max-w-[450px] flex flex-col items-center relative">
-            <div class="input-group w-full flex flex-col items-center">
+        <div class="main-content">
+            <div class="input-group">
                 <input type="text" id="meetingInput" placeholder="输入会议名称" autocomplete="off">
                 <button id="joinButton">创建 / 加入会议</button>
             </div>
 
-            <div id="historyContainer" class="history-container w-full flex flex-col gap-2 mt-6"></div>
+            <div id="historyContainer" class="history-container mt-6"></div>
 
-            <div class="button-container flex justify-center gap-5 mt-10">
+            <div class="button-container">
                 <a href="https://qiuxiaotao.cn/Jitsi%20Meet.apk" class="download-button" target="_blank" rel="noopener">
-                    <i class="fab fa-android mr-2"></i>安卓
+                    <i class="fab fa-android"></i>安卓
                 </a>
                 <a href="https://itunes.apple.com/us/app/jitsi-meet/id1165103905" class="download-button" target="_blank" rel="noopener">
-                    <i class="fab fa-apple mr-2"></i>iOS
+                    <i class="fab fa-apple"></i>iOS
                 </a>
             </div>
         </div>
     </div>
 
     <style>
-        /* --- 终极修复方案：核弹级样式重置 --- */
-        /* 强制覆盖所有父级容器的动画和过渡，确保毛玻璃有稳定的渲染环境 */
+        /* =========================================
+           1. 终极修复方案 (保留原逻辑)
+           ========================================= */
         :global(.meeting-force-override) {
             transform: none !important;
             filter: none !important;
@@ -42,22 +43,42 @@ const description = "秋晓桃の会议室";
             mask: none !important;
             clip-path: none !important;
             will-change: auto !important;
-            
-            /* ★关键修改★：禁止一切动画和过渡，强制不透明度为 1 */
             animation: none !important;
             transition: none !important;
             opacity: 1 !important;
         }
-
-        /* 专门针对 MainGridLayout 中的 onload-animation 类进行屏蔽 */
         :global(.meeting-force-override.onload-animation) {
             animation: none !important;
             opacity: 1 !important;
         }
 
-        /* --- 元素样式 --- */
+        /* =========================================
+           2. 核心样式移植 (源自 HTML)
+           ========================================= */
+        
+        /* 变量定义，保持一致性 */
+        :root {
+            --text-color: #ffffff;
+            --text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+            --transition-speed: 0.5s;
+        }
 
-        /* 输入框 - 确保毛玻璃生效 */
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 90%;
+            max-width: 450px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+        }
+
+        /* 输入框样式 - 1:1 还原 HTML */
         #meetingInput {
             width: 300px;
             height: 50px;
@@ -66,16 +87,18 @@ const description = "秋晓桃の会议室";
             text-align: center;
             
             background-color: rgba(0, 0, 0, 0.25);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.2);
             border-radius: 12px;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            color: #ffffff;
+            color: var(--text-color);
             outline: none;
-            transition: width 0.4s cubic-bezier(0.25, 0.8, 0.25, 1),
-                        background-color 0.4s, border-color 0.4s, box-shadow 0.4s;
+            
+            /* 过渡效果 */
+            transition: all var(--transition-speed) cubic-bezier(0.25, 0.8, 0.25, 1);
             margin-bottom: 20px;
+            box-sizing: border-box;
         }
 
         #meetingInput::placeholder {
@@ -83,40 +106,50 @@ const description = "秋晓桃の会议室";
             transition: color 0.3s ease;
         }
 
-        /* 按钮样式 */
+        /* 按钮样式 - 1:1 还原 HTML (更亮的白色) */
         #joinButton {
             width: 200px;
             height: 50px;
             border: none;
             border-radius: 12px;
-            background: rgba(255, 255, 255, 0.75);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
             
+            background: rgba(255, 255, 255, 0.9); /* HTML 使用 0.9 */
             color: #333;
+            
             font-size: 18px;
             font-weight: 600;
             cursor: pointer;
-            transition: transform 0.2s, background-color 0.2s;
+            transition: all 0.3s ease;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
         }
+
         #joinButton:hover {
-            background: rgba(255, 255, 255, 0.95);
+            background: rgba(255, 255, 255, 1);
             transform: scale(1.03);
         }
+
         #joinButton:active {
             transform: scale(0.98);
         }
 
-        /* 聚焦模式样式 */
+        /* =========================================
+           3. 聚焦模式 (Is Focused)
+           ========================================= */
+        
+        /* 聚焦时输入框变宽、变深 */
         .meeting-wrapper.is-focused #meetingInput {
             width: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            border-color: rgba(255, 255, 255, 0.8);
-            box-shadow: 0 0 30px rgba(255, 255, 255, 0.1);
+            background-color: rgba(0, 0, 0, 0.5); 
+            border-color: rgba(255, 255, 255, 0.5);
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.15);
+            color: #ffffff;
         }
-        .meeting-wrapper.is-focused #meetingInput::placeholder { color: transparent; }
-        
+
+        .meeting-wrapper.is-focused #meetingInput::placeholder {
+            color: transparent;
+        }
+
+        /* 聚焦时其他元素虚化 (保留 Astro 原有的优化体验) */
         .meeting-wrapper.is-focused .history-container,
         .meeting-wrapper.is-focused .button-container {
             opacity: 0.3;
@@ -129,9 +162,58 @@ const description = "秋晓桃の会议室";
             filter: blur(0);
         }
 
-        /* 历史记录样式 */
+        /* =========================================
+           4. 历史记录 (History) - 1:1 还原 HTML
+           ========================================= */
+        
+        .history-container {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            /* HTML margin-top 25px vs Astro original logic, using HTML's logic via mt-6 class or here */
+        }
+
+        /* 全局样式穿透，因为历史记录是 JS 生成的 */
+        :global(.history-header) {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        :global(.history-title) {
+            font-size: 14px;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.85);
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+            margin: 0 0 0 5px;
+        }
+
+        :global(.history-clear-all-btn) {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 16px; /* HTML 是 16px */
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 12px;
+            cursor: pointer;
+            padding: 4px 12px;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        :global(.history-clear-all-btn:hover) {
+            background-color: #ffffff;
+            color: #000000;
+            border-color: #ffffff;
+            box-shadow: 0 0 12px rgba(255, 255, 255, 0.4);
+            transform: scale(1.05);
+        }
+
         :global(.history-item) {
             position: relative;
+            overflow: hidden;
             background-color: rgba(0, 0, 0, 0.25);
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
@@ -142,14 +224,17 @@ const description = "秋晓桃の会议室";
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 8px;
-            transition: all 0.3s;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            font-size: 15px;
         }
+
         :global(.history-item:hover) {
             background-color: rgba(255, 255, 255, 0.1);
             padding-left: 24px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
             border-color: rgba(255, 255, 255, 0.2);
         }
+
         :global(.history-item::before) {
             content: '';
             position: absolute;
@@ -160,13 +245,42 @@ const description = "秋晓桃の会议室";
             width: 4px;
             border-radius: 2px;
             background-color: #ffffff;
-            transition: transform 0.2s;
+            transition: transform 0.2s ease, background-color 0.2s ease;
         }
+
         :global(.history-item:hover::before) {
             transform: translateY(-50%) scaleY(1);
         }
+
+        :global(.history-delete-btn) {
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 20px;
+            font-weight: bold;
+            line-height: 1;
+            cursor: pointer;
+            padding: 0 0 0 10px;
+            opacity: 0.7;
+            transition: all 0.2s ease;
+        }
+
+        :global(.history-delete-btn:hover) {
+            opacity: 1;
+            color: #fff;
+        }
+
+        /* =========================================
+           5. 下载按钮区 (Download Buttons)
+           ========================================= */
         
-        /* 下载按钮 */
+        .button-container {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 40px;
+        }
+
         .download-button {
             display: flex;
             align-items: center;
@@ -174,50 +288,52 @@ const description = "秋晓桃の会议室";
             color: rgba(255, 255, 255, 0.8);
             text-decoration: none;
             font-size: 14px;
+            font-weight: 400;
             padding: 8px 20px;
             border-radius: 50px;
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.2);
             backdrop-filter: blur(4px);
             -webkit-backdrop-filter: blur(4px);
-            transition: all 0.3s;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
         }
+
         .download-button:hover {
             background-color: #ffffff;
             color: #000000;
+            border-color: #ffffff;
+            box-shadow: 0 0 12px rgba(255, 255, 255, 0.4);
             transform: scale(1.05);
         }
-
-        /* 通用文字样式 */
-        :global(.history-header) { display: flex; justify-content: space-between; margin-bottom: 10px; }
-        :global(.history-title) { font-size: 14px; color: rgba(255,255,255,0.85); text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
-        :global(.history-clear-all-btn) { 
-            background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.2);
-            color: #ddd; border-radius: 12px; font-size: 12px; padding: 2px 10px; cursor: pointer; transition: all 0.2s;
+        
+        .download-button i {
+            margin-right: 8px;
         }
-        :global(.history-clear-all-btn:hover) { background: #fff; color: #000; }
-        :global(.history-delete-btn) { background: none; border: none; color: #aaa; font-size: 18px; cursor: pointer; padding: 0 0 0 10px; }
-        :global(.history-delete-btn:hover) { color: #fff; }
     </style>
 
     <style is:global>
-        /* 聚焦时背景模糊 */
+        /* 全局聚焦效果逻辑：
+           这里控制背景图的模糊（#bg-box）和遮罩层的显示 
+        */
+
         #bg-box {
             transition: filter 0.6s cubic-bezier(0.25, 0.8, 0.25, 1), transform 0.6s;
             will-change: filter, transform;
         }
+
+        /* 聚焦时背景模糊放大 */
         body.meeting-mode-focused #bg-box {
-            filter: blur(20px) !important;
+            filter: blur(15px) !important; /* HTML 是 15px */
             transform: scale(1.05);
         }
         
-        /* 聚焦时显示遮罩 */
+        /* 聚焦时显示深色遮罩 */
         body.meeting-mode-focused #meeting-overlay {
+            background-color: rgba(0, 0, 0, 0.4); /* 对应 HTML .overlay 在 focused 时的颜色 */
             opacity: 1;
         }
 
-        /* 隐藏底栏 */
+        /* 强制隐藏底栏 (按照要求) */
         body.is-meeting-page .footer {
             display: none !important;
         }
@@ -231,13 +347,10 @@ const description = "秋晓桃の会议室";
             const STORAGE_KEY = 'jitsiMeetingHistory';
             const MAX_HISTORY_ITEMS = 8;
             
-            // 定义需要强制修复的容器 ID
-            // main-grid: 过渡效果会导致 stacking context
-            // content-wrapper: 加载动画(opacity)会导致 backdrop-filter 失效
+            // 修复逻辑配置
             const TARGET_IDS = ['swup-container', 'content-wrapper', 'main-grid'];
             const FORCE_CLASS = 'meeting-force-override';
 
-            // 工具：确保背景图可见（防止 Banner 加载动画卡在 opacity-0 导致毛玻璃失效）
             function ensureBannerVisible() {
                 const banner = document.getElementById('banner');
                 if (banner) {
@@ -253,18 +366,14 @@ const description = "秋晓桃の会议室";
                 }
             }
 
-            // 工具：给关键容器添加强制类，并移除原有的动画类
             function applyForceStyles() {
                 TARGET_IDS.forEach(id => {
                     const el = document.getElementById(id);
                     if (el) {
                         el.classList.add(FORCE_CLASS);
-                        // ★★★ 核心修复：移除原有的动画类名 ★★★
-                        // 这比仅仅添加 override 类更安全，防止 CSS 优先级竞争
                         el.classList.remove('onload-animation');
                         el.classList.remove('transition-swup-fade');
                         
-                        // 双重保险：直接修改行内样式
                         el.style.setProperty('transform', 'none', 'important');
                         el.style.setProperty('overflow', 'visible', 'important');
                         el.style.setProperty('transition', 'none', 'important');
@@ -274,56 +383,45 @@ const description = "秋晓桃の会议室";
                 });
                 document.body.classList.add('is-meeting-page'); 
                 
-                // ★★★ 核心修复：强制显示背景图 ★★★
                 ensureBannerVisible();
                 requestAnimationFrame(() => {
                     ensureBannerVisible();
-                    // 多次尝试，对抗浏览器的渲染队列
                     requestAnimationFrame(ensureBannerVisible);
                 });
             }
 
-            // 工具：清理强制类
             function clearForceStyles() {
                 TARGET_IDS.forEach(id => {
                     const el = document.getElementById(id);
                     if (el) {
                         el.classList.remove(FORCE_CLASS);
-                        // 清理行内样式
                         el.style.removeProperty('transform');
                         el.style.removeProperty('overflow');
                         el.style.removeProperty('transition');
                         el.style.removeProperty('animation');
                         el.style.removeProperty('opacity');
-                        
-                        // 注意：我们不加回 'onload-animation'，因为离开页面时页面结构会被 swup 替换，
-                        // 或者如果是在当前页导航，也不需要再次触发加载动画。
                     }
                 });
                 document.body.classList.remove('is-meeting-page');
                 document.body.classList.remove('meeting-mode-focused');
             }
 
-            // 初始化函数
             function initMeetingRoom() {
                 const input = document.getElementById('meetingInput');
                 const joinBtn = document.getElementById('joinButton');
                 const wrapper = document.querySelector('.meeting-wrapper');
                 
-                // 1. 检查环境
                 if (!input || !wrapper) {
-                    clearForceStyles(); // 不在会议页时清理
+                    clearForceStyles();
                     return;
                 }
 
-                // 2. ★★★ 核心修复：立即应用样式 ★★★
                 applyForceStyles();
 
-                // 3. 防止重复初始化事件监听
                 if (wrapper.dataset.init === 'true') return;
                 wrapper.dataset.init = 'true';
 
-                // --- 事件监听 (保持不变) ---
+                // 事件监听
                 input.onfocus = () => {
                     wrapper.classList.add('is-focused');
                     document.body.classList.add('meeting-mode-focused');
@@ -339,7 +437,7 @@ const description = "秋晓桃の会议室";
                 
                 loadHistory();
                 
-                // 注入 Shake 动画样式
+                // Shake 动画
                 if (!document.getElementById('shake-style')) {
                     const s = document.createElement('style');
                     s.id = 'shake-style';
@@ -348,7 +446,6 @@ const description = "秋晓桃の会议室";
                 }
             }
 
-            // --- 业务逻辑 ---
             function loadHistory() {
                 const container = document.getElementById('historyContainer');
                 if (!container) return;
@@ -380,6 +477,7 @@ const description = "秋晓桃の会议室";
                         span.textContent = name;
                         span.style.flexGrow = '1';
                         span.style.cursor = 'pointer';
+                        span.style.textAlign = 'left';
                         span.onclick = () => goToMeeting(name);
 
                         const delBtn = document.createElement('button');
@@ -436,11 +534,9 @@ const description = "秋晓桃の会议室";
                 }
             }
 
-            // --- 启动逻辑 ---
-            // 1. 立即执行（处理 Swup 导航）
+            // 启动逻辑
             initMeetingRoom();
 
-            // 2. 页面加载完成后再次执行（处理硬刷新）
             window.addEventListener('load', () => {
                 const wrapper = document.querySelector('.meeting-wrapper');
                 if (wrapper) {
@@ -448,7 +544,6 @@ const description = "秋晓桃の会议室";
                 }
             });
 
-            // 监听 swup 事件清理状态 (确保离开页面时类名被移除)
             if (window.swup) {
                 window.swup.hooks.on('visit:start', () => {
                     document.body.classList.remove('meeting-mode-focused');
