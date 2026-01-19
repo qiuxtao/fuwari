@@ -15,6 +15,7 @@ const description = "秋晓桃の会议室";
         <div class="main-content">
             <div class="input-group">
                 <input type="text" id="meetingInput" placeholder="输入会议名称" autocomplete="off">
+                
                 <button id="joinButton">创建 / 加入会议</button>
             </div>
 
@@ -23,6 +24,7 @@ const description = "秋晓桃の会议室";
             <div class="button-container">
                 <a href="https://qiuxiaotao.cn/Jitsi%20Meet.apk" class="download-button" target="_blank" rel="noopener">
                     <i class="fab fa-android"></i>安卓
+               
                 </a>
                 <a href="https://itunes.apple.com/us/app/jitsi-meet/id1165103905" class="download-button" target="_blank" rel="noopener">
                     <i class="fab fa-apple"></i>iOS
@@ -68,7 +70,7 @@ const description = "秋晓桃の会议室";
             width: 90%;
             max-width: 450px;
             /* 视觉微调：让内容在垂直居中的基础上稍微往上提一点 */
-            margin-bottom: 2vh; 
+            margin-bottom: 2vh;
         }
 
         .input-group {
@@ -87,15 +89,16 @@ const description = "秋晓桃の会议室";
             text-align: center;
             
             background-color: rgba(0, 0, 0, 0.25);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
+            /* [修改] 默认不开启模糊，且添加 backdrop-filter 的过渡 */
+            backdrop-filter: blur(0px);
+            -webkit-backdrop-filter: blur(0px);
             border: 1px solid rgba(255, 255, 255, 0.2);
             border-radius: 12px;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
             color: var(--text-color);
             outline: none;
             
-            transition: all var(--transition-speed) cubic-bezier(0.25, 0.8, 0.25, 1);
+            transition: all var(--transition-speed) cubic-bezier(0.25, 0.8, 0.25, 1), backdrop-filter 0.8s ease;
             margin-bottom: 20px;
             box-sizing: border-box;
         }
@@ -183,15 +186,16 @@ const description = "秋晓桃の会议室";
 
         :global(.history-clear-all-btn) {
             background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
+            /* [修改] 默认不开启模糊 */
+            backdrop-filter: blur(0px);
+            -webkit-backdrop-filter: blur(0px);
             border: 1px solid rgba(255, 255, 255, 0.2);
             border-radius: 16px;
             color: rgba(255, 255, 255, 0.8);
             font-size: 12px;
             cursor: pointer;
             padding: 4px 12px;
-            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), backdrop-filter 0.8s ease;
         }
 
         :global(.history-clear-all-btn:hover) {
@@ -206,8 +210,9 @@ const description = "秋晓桃の会议室";
             position: relative;
             overflow: hidden;
             background-color: rgba(0, 0, 0, 0.25);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
+            /* [修改] 默认不开启模糊 */
+            backdrop-filter: blur(0px);
+            -webkit-backdrop-filter: blur(0px);
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 10px;
             padding: 10px 15px;
@@ -215,7 +220,7 @@ const description = "秋晓桃の会议室";
             display: flex;
             justify-content: space-between;
             align-items: center;
-            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), backdrop-filter 0.8s ease;
             font-size: 15px;
         }
 
@@ -283,9 +288,10 @@ const description = "秋晓桃の会议室";
             border-radius: 50px;
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
-            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            /* [修改] 默认不开启模糊 */
+            backdrop-filter: blur(0px);
+            -webkit-backdrop-filter: blur(0px);
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), backdrop-filter 0.8s ease;
         }
 
         .download-button:hover {
@@ -302,6 +308,18 @@ const description = "秋晓桃の会议室";
     </style>
 
     <style is:global>
+        /* [新增] 当 Body 加上 meeting-ready 类时，激活所有元素的模糊效果 */
+        body.meeting-ready #meetingInput,
+        body.meeting-ready .history-item {
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+        body.meeting-ready .history-clear-all-btn,
+        body.meeting-ready .download-button {
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+        }
+
         #bg-box {
             transition: filter 0.6s cubic-bezier(0.25, 0.8, 0.25, 1), transform 0.6s;
             will-change: filter, transform;
@@ -325,6 +343,9 @@ const description = "秋晓桃の会议室";
             
             const TARGET_IDS = ['swup-container', 'content-wrapper', 'main-grid'];
             const FORCE_CLASS = 'meeting-force-override';
+            
+            // 动画延迟时间 (ms)，需要比 transition.css 中的动画时间稍长
+            const ANIMATION_DELAY = 600;
 
             function ensureBannerVisible() {
                 const banner = document.getElementById('banner');
@@ -341,13 +362,16 @@ const description = "秋晓桃の会议室";
                 }
             }
 
+            // 锁定样式（解决动画后的抖动/层级问题）
             function applyForceStyles() {
                 TARGET_IDS.forEach(id => {
                     const el = document.getElementById(id);
                     if (el) {
                         el.classList.add(FORCE_CLASS);
-                        el.classList.remove('onload-animation');
-                        el.classList.remove('transition-swup-fade');
+                        
+                        // [关键修改] 不再移除动画类，允许通用动画播放
+                        // el.classList.remove('onload-animation');
+                        // el.classList.remove('transition-swup-fade');
                         
                         el.style.setProperty('transform', 'none', 'important');
                         el.style.setProperty('overflow', 'visible', 'important');
@@ -379,6 +403,9 @@ const description = "秋晓桃の会议室";
                 });
                 document.body.classList.remove('is-meeting-page');
                 document.body.classList.remove('meeting-mode-focused');
+                
+                // [新增] 移除就绪状态，防止切出时带有模糊效果导致卡顿
+                document.body.classList.remove('meeting-ready');
             }
 
             function initMeetingRoom() {
@@ -391,7 +418,14 @@ const description = "秋晓桃の会议室";
                     return;
                 }
 
-                applyForceStyles();
+                // [修改] 先重置状态，延迟后再锁定样式和开启模糊
+                document.body.classList.remove('meeting-ready');
+                
+                setTimeout(() => {
+                    applyForceStyles();
+                    // 动画结束后，添加 meeting-ready 类，触发 CSS 中的 backdrop-filter 渐入
+                    document.body.classList.add('meeting-ready');
+                }, ANIMATION_DELAY);
 
                 if (wrapper.dataset.init === 'true') return;
                 wrapper.dataset.init = 'true';
@@ -419,6 +453,7 @@ const description = "秋晓桃の会议室";
                 }
             }
 
+            // ... loadHistory, saveToHistory 等函数保持不变 ...
             function loadHistory() {
                 const container = document.getElementById('historyContainer');
                 if (!container) return;
@@ -506,27 +541,28 @@ const description = "秋晓桃の会议室";
                     setTimeout(() => input.style.animation = '', 500);
                 }
             }
+            // ... 结束 ...
 
             initMeetingRoom();
-
+            
+            // [注意] load 事件这里也需要延迟处理，或者直接由 initMeetingRoom 处理即可
             window.addEventListener('load', () => {
-                const wrapper = document.querySelector('.meeting-wrapper');
-                if (wrapper) {
-                    applyForceStyles();
-                }
+                // 原来的逻辑是立即应用 forceStyles，现在交给 initMeetingRoom 中的 setTimeout 统一处理
             });
 
             if (window.swup) {
                 window.swup.hooks.on('visit:start', () => {
                     document.body.classList.remove('meeting-mode-focused');
                     document.body.classList.remove('is-meeting-page');
+                    document.body.classList.remove('meeting-ready'); // 清理
                 });
             } else {
                 document.addEventListener('swup:enable', () => {
                      window.swup.hooks.on('visit:start', () => {
                         document.body.classList.remove('meeting-mode-focused');
                         document.body.classList.remove('is-meeting-page');
-                     });
+                        document.body.classList.remove('meeting-ready'); // 清理
+                    });
                 });
             }
 
