@@ -1,0 +1,45 @@
+name: 自动构建并推送到 release 分支
+
+on:
+  push:
+    branches:
+      - main  # 监听 main 分支的推送
+
+env:
+  TZ: Asia/Shanghai
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检查分支
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: 安装 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+
+      # Fuwari 官方推荐使用 pnpm，如果你使用的是 npm，将下面的 pnpm 改为 npm 即可
+      - name: 安装 pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 8
+
+      - name: 安装依赖
+        run: pnpm install
+
+      - name: 构建 Astro 静态文件
+        run: pnpm run build
+
+      - name: 推送到 release 分支
+        run: |
+          cd ./dist
+          git init
+          git config --global user.name 'GitHub Action'
+          git config --global user.email 'action@github.com'
+          git add .
+          git commit -m "build: 自动构建发布版本"
+          git push --force --quiet "https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" master:release
