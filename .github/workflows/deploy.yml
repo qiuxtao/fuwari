@@ -1,15 +1,15 @@
-name: 自动构建并推送到 release 分支
+name: 自动构建与部署
 
 on:
   push:
     branches:
-      - main  # 监听 main 分支的推送
+      - main  # 监听 main 分支的提交
 
 env:
   TZ: Asia/Shanghai
 
 jobs:
-  build-and-push:
+  deploy:
     runs-on: ubuntu-latest
     steps:
       - name: 检查分支
@@ -22,7 +22,6 @@ jobs:
         with:
           node-version: "20.x"
 
-      # Fuwari 官方推荐使用 pnpm，如果你使用的是 npm，将下面的 pnpm 改为 npm 即可
       - name: 安装 pnpm
         uses: pnpm/action-setup@v3
         with:
@@ -31,15 +30,30 @@ jobs:
       - name: 安装依赖
         run: pnpm install
 
-      - name: 构建 Astro 静态文件
+      - name: 生成静态文件
         run: pnpm run build
 
-      - name: 推送到 release 分支
+      - name: 将产物推送到 release 分支
         run: |
           cd ./dist
           git init
           git config --global user.name 'GitHub Action'
           git config --global user.email 'action@github.com'
           git add .
-          git commit -m "build: 自动构建发布版本"
+          git commit -m "build: 更新静态文件"
           git push --force --quiet "https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" master:release
+
+      - name: 服务器执行拉取命令
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.KEY }}
+          port: ${{ secrets.PORT }}
+          script: |
+            cd /opt/1panel/www/sites/qiuxiaotao.com/index
+            git config --global --add safe.directory "$(pwd)"
+            git fetch --all --depth=1
+            git reset --hard origin/release
+            git pull --depth=1
+            echo "✅ 博客静态文件拉取完成"
