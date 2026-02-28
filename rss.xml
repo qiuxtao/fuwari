@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>秋晓桃の神秘小窝</title><description>No description</description><link>https://fuwari.vercel.app/</link><language>zh_CN</language><item><title>Linux 使用 curl 快速查看系统出站公网 IP</title><link>https://fuwari.vercel.app/posts/linux-check-outbound-ip/</link><guid isPermaLink="true">https://fuwari.vercel.app/posts/linux-check-outbound-ip/</guid><description>Linux 终端下如何使用 curl 命令快速查询服务器的公网出站 IP 地址</description><pubDate>Sat, 21 Feb 2026 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;在日常的 Linux 服务器管理与运维中，我们经常需要确认当前机器的公网出站 IP。无论是为了配置白名单、检查代理是否生效，还是单纯确认网络环境，以下几个 &lt;code&gt;curl&lt;/code&gt; 命令都非常实用且高效。&lt;/p&gt;
+&lt;h3&gt;国际网络环境&lt;/h3&gt;
+&lt;p&gt;如果你的服务器位于海外，或者你需要测试服务器访问国际互联网时的出口 IP，可以使用 &lt;code&gt;ipinfo.io&lt;/code&gt;。这个接口不仅会返回你的 IP 地址，通常还会附带 ASN、地理位置和运营商等实用信息：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;curl ipinfo.io
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;大陆网络环境&lt;/h3&gt;
+&lt;p&gt;对于国内的云服务器或本地网络，使用 &lt;code&gt;ipip.net&lt;/code&gt; 提供的接口响应速度更快，且国内 IP 库定位非常准确：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;curl myip.ipip.net
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;查询 IPv6 地址&lt;/h3&gt;
+&lt;p&gt;随着 IPv6 的逐渐普及，有时我们需要专门确认服务器的 IPv6 出网是否正常。通过给 &lt;code&gt;curl&lt;/code&gt; 加上 &lt;code&gt;-6&lt;/code&gt; 参数，强制使用 IPv6 网络去请求 &lt;code&gt;ip.sb&lt;/code&gt; 即可实现查询：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;curl ip.sb -6
+&lt;/code&gt;&lt;/pre&gt;
+</content:encoded></item><item><title>搭建一个开源的视频会议项目——Jitsi Meet</title><link>https://fuwari.vercel.app/posts/deploy-jitsi-meet/</link><guid isPermaLink="true">https://fuwari.vercel.app/posts/deploy-jitsi-meet/</guid><description>手把手教你部署 Jitsi Meet</description><pubDate>Mon, 24 Feb 2025 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;现在免费的视频会议基本上都会限制时长，虽然说腾讯会议和 Microsoft Teams 都支持两人会议不限时，但是他们都会有些缺陷：Teams 是因为服务器不在国内，延迟较大，视频和屏幕共享几乎卡到了不可用的状态；用腾讯会议的时候我的朋友经常会抱怨我共享屏幕的声音太小了，我知道腾讯会议把共享屏幕的声音降低是因为可以防止覆盖掉麦克风的声音，但是为什么不提供一个选项可以开关这个功能呢？&lt;/p&gt;
+&lt;p&gt;接下来要搭建的这个项目—— Jitsi Meet，就没有这些问题，它开源免费、可以直接在网页加入、支持端到端加密、如果会议里只有两个人还支持p2p（已知的缺点是不支持共享屏幕的时候进行批注）&lt;/p&gt;
+&lt;h3&gt;创建并进入安装目录&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;mkdir -p /root/data/docker_data/jitsi
+cd /root/data/docker_data/jitsi
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;拉去项目文件并进入项目目录&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;git clone https://github.com/jitsi/docker-jitsi-meet
+cd docker-jitsi-meet 
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;复制示例配置文件并生成密钥&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;cp env.example .env 
+./gen-passwords.sh 
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;编辑配置文件&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;nano .env
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;需要编辑的配置&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;JICOFO_AUTH_LIFETIME=720 hours # 为已认证用户的会话超时值改为720小时
+CONFIG=/root/data/docker_data/jitsi/jitsi-meet-cfg # 自定义配置文件目录
+HTTP_PORT=8000 # http端口
+HTTPS_PORT=8443 # https端口
+TZ=Asia/Shanghai # 时区
+PUBLIC_URL=https://meeting.qiuxiaotao.cn/ # 公开访问的URL
+ENABLE_AUTH=1 # 是否启用身份验证
+ENABLE_GUESTS=1 # 是否允许访客
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;如果无法使用 WebSocket，可以设置以下环境变量以回退到 HTTP 轮询和 WebRTC 数据通道&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;ENABLE_SCTP=1
+ENABLE_COLIBRI_WEBSOCKET=0
+ENABLE_XMPP_WEBSOCKET=0
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;启动Jitsi&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;docker compose up -d
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;设置反代&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;    location / {
+        proxy_pass https://127.0.0.1:8443/;
+        proxy_redirect off;
+        proxy_set_header Host $host; 
+        proxy_set_header X-Forwarded-Proto $scheme; 
+        proxy_set_header X-Real-IP $remote_addr; 
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for; 
+        proxy_set_header Upgrade $http_upgrade; 
+        proxy_set_header Connection $http_connection; 
+    }
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;自定义内容&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;cd /root/data/docker_data/jitsi/jitsi-meet-cfg/web
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;cp interface_config.js custom-interface_config.js
+nano custom-interface_config.js
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;去除 Jitsi 水印&lt;/strong&gt;：找到 &lt;code&gt;SHOW_JITSI_WATERMARK&lt;/code&gt; 将 &lt;code&gt;true&lt;/code&gt; 改为 &lt;code&gt;false&lt;/code&gt;&lt;br /&gt;
+**修改应用名称：**找到 &lt;code&gt;APP_NAME&lt;/code&gt; ，自定义名称&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;cp config.js custom-config.js
+nano custom-config.js
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;**设置必须输入昵称才能进入会议：**找到 &lt;code&gt;config.requireDisplayName&lt;/code&gt; 将 &lt;code&gt;false&lt;/code&gt; 改为 &lt;code&gt;true&lt;/code&gt;&lt;br /&gt;
+&lt;strong&gt;将头像库自定义为&lt;/strong&gt; &lt;code&gt;weavatar.com&lt;/code&gt; **：**找到 &lt;code&gt;var config = {};&lt;/code&gt; ，在下面加上 &lt;code&gt;config.gravatarBaseURL = &apos;https://weavatar.com/avatar/&apos;;&lt;/code&gt; 这一行&lt;/p&gt;
+&lt;p&gt;**修改图标：**将本地 &lt;code&gt;favicon.svg&lt;/code&gt; 替换容器内的 &lt;code&gt;favicon.svg&lt;/code&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;docker cp /root/data/docker_data/jitsi/jitsi-meet-cfg/web/custom/favicon.svg docker-jitsi-meet-web-1:/usr/share/jitsi-meet/images/favicon.svg
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;重启web&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;docker compose restart web
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;管理主持人账号&lt;/h3&gt;
+&lt;p&gt;进入容器&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;docker compose exec prosody /bin/bash
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;新增用户&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;prosodyctl --config /config/prosody.cfg.lua register 用户名 meet.jitsi 密码
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;删除用户&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;prosodyctl --config /config/prosody.cfg.lua unregister 用户名 meet.jitsi
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;列出所有已注册用户&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;find /config/data/meet%2ejitsi/accounts -type f -exec basename {} .dat \;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;部分内容引用自 &lt;a href=&quot;https://jitsi.github.io/handbook/docs/intro&quot;&gt;Jitsi Meet官方文档&lt;/a&gt;&lt;/p&gt;
+</content:encoded></item></channel></rss>
