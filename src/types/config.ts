@@ -77,6 +77,7 @@ export type ProfileConfig = {
 	links: {
 		name: string;
 		url: string;
+		mobileUrl?: string;
 		icon: string;
 	}[];
 };

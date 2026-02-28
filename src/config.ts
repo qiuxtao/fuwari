@@ -87,7 +87,8 @@ export const profileConfig: ProfileConfig = {
     {
       name: "QQ",
       icon: "fa6-brands:qq",
-      url: "https://qm.qq.com/q/kK8ZfdYGmQ",
+      url: "https://qm.qq.com/q/XvN6jngtSC",
+      mobileUrl: "mqqapi://card/show_pslcard?src_type=internal&version=1&uin=1021865556&card_type=person&source=sharecard",
     },
     {
       name: "Telegram",
