@@ -1,6 +1,7 @@
 name: 自动构建与部署
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main  # 监听 main 分支的提交
