@@ -15,34 +15,34 @@ draft: false
 
 ### 创建并进入安装目录
 
-```
+```bash
 mkdir -p /root/data/docker_data/jitsi
 cd /root/data/docker_data/jitsi
 ```
 
-### 拉去项目文件并进入项目目录
+### 拉取项目文件并进入项目目录
 
-```
+```bash
 git clone https://github.com/jitsi/docker-jitsi-meet
-cd docker-jitsi-meet 
+cd docker-jitsi-meet
 ```
 
 ### 复制示例配置文件并生成密钥
 
-```
+```bash
 cp env.example .env 
 ./gen-passwords.sh 
 ```
 
 ### 编辑配置文件
 
-```
+```bash
 nano .env
 ```
 
 ### 需要编辑的配置
 
-```
+```bash
 JICOFO_AUTH_LIFETIME=720 hours # 为已认证用户的会话超时值改为720小时
 CONFIG=/root/data/docker_data/jitsi/jitsi-meet-cfg # 自定义配置文件目录
 HTTP_PORT=8000 # http端口
@@ -55,7 +55,7 @@ ENABLE_GUESTS=1 # 是否允许访客
 
 如果无法使用 WebSocket，可以设置以下环境变量以回退到 HTTP 轮询和 WebRTC 数据通道
 
-```
+```bash
 ENABLE_SCTP=1
 ENABLE_COLIBRI_WEBSOCKET=0
 ENABLE_XMPP_WEBSOCKET=0
@@ -63,13 +63,13 @@ ENABLE_XMPP_WEBSOCKET=0
 
 ### 启动Jitsi
 
-```
+```bash
 docker compose up -d
 ```
 
 ### 设置反代
 
-```
+```nginx
     location / {
         proxy_pass https://127.0.0.1:8443/;
         proxy_redirect off;
@@ -84,11 +84,11 @@ docker compose up -d
 
 ### 自定义内容
 
-```
+```bash
 cd /root/data/docker_data/jitsi/jitsi-meet-cfg/web
 ```
 
-```
+```bash
 cp interface_config.js custom-interface_config.js
 nano custom-interface_config.js
 ```
@@ -96,7 +96,7 @@ nano custom-interface_config.js
 **去除 Jitsi 水印**：找到 `SHOW_JITSI_WATERMARK` 将 `true` 改为 `false`  
 **修改应用名称：**找到 `APP_NAME` ，自定义名称
 
-```
+```bash
 cp config.js custom-config.js
 nano custom-config.js
 ```
@@ -106,13 +106,13 @@ nano custom-config.js
 
 **修改图标：**将本地 `favicon.svg` 替换容器内的 `favicon.svg`
 
-```
+```bash
 docker cp /root/data/docker_data/jitsi/jitsi-meet-cfg/web/custom/favicon.svg docker-jitsi-meet-web-1:/usr/share/jitsi-meet/images/favicon.svg
 ```
 
 重启web
 
-```
+```bash
 docker compose restart web
 ```
 
@@ -120,25 +120,25 @@ docker compose restart web
 
 进入容器
 
-```
+```bash
 docker compose exec prosody /bin/bash
 ```
 
 新增用户
 
-```
+```bash
 prosodyctl --config /config/prosody.cfg.lua register 用户名 meet.jitsi 密码
 ```
 
 删除用户
 
-```
+```bash
 prosodyctl --config /config/prosody.cfg.lua unregister 用户名 meet.jitsi
 ```
 
 列出所有已注册用户
 
-```
+```bash
 find /config/data/meet%2ejitsi/accounts -type f -exec basename {} .dat \;
 ```
 

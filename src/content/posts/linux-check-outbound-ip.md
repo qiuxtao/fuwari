@@ -4,6 +4,7 @@ published: 2026-02-21
 description: Linux 终端下如何使用 curl 命令快速查询服务器的公网出站 IP 地址
 tags:
   - Linux
+  - 网络
 category: 笔记
 draft: false
 ---
@@ -13,7 +14,7 @@ draft: false
 
 如果你的服务器位于海外，或者你需要测试服务器访问国际互联网时的出口 IP，可以使用 `ipinfo.io`。这个接口不仅会返回你的 IP 地址，通常还会附带 ASN、地理位置和运营商等实用信息：
 
-```
+```bash
 curl ipinfo.io
 ```
 
@@ -21,7 +22,7 @@ curl ipinfo.io
 
 对于国内的云服务器或本地网络，使用 `ipip.net` 提供的接口响应速度更快，且国内 IP 库定位非常准确：
 
-```
+```bash
 curl myip.ipip.net
 ```
 
@@ -29,6 +30,6 @@ curl myip.ipip.net
 
 随着 IPv6 的逐渐普及，有时我们需要专门确认服务器的 IPv6 出网是否正常。通过给 `curl` 加上 `-6` 参数，强制使用 IPv6 网络去请求 `ip.sb` 即可实现查询：
 
-```
+```bash
 curl ip.sb -6
 ```
