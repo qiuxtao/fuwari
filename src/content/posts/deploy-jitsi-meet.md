@@ -13,34 +13,34 @@ draft: false
 
 接下来要搭建的这个项目—— Jitsi Meet，就没有这些问题，它开源免费、可以直接在网页加入、支持端到端加密、如果会议里只有两个人还支持p2p（已知的缺点是不支持共享屏幕的时候进行批注）
 
-### 创建并进入安装目录
+## 创建并进入安装目录
 
 ```bash
 mkdir -p /root/data/docker_data/jitsi
 cd /root/data/docker_data/jitsi
 ```
 
-### 拉取项目文件并进入项目目录
+## 拉取项目文件并进入项目目录
 
 ```bash
 git clone https://github.com/jitsi/docker-jitsi-meet
 cd docker-jitsi-meet
 ```
 
-### 复制示例配置文件并生成密钥
+## 复制示例配置文件并生成密钥
 
 ```bash
 cp env.example .env 
 ./gen-passwords.sh 
 ```
 
-### 编辑配置文件
+## 编辑配置文件
 
 ```bash
 nano .env
 ```
 
-### 需要编辑的配置
+## 需要编辑的配置
 
 ```bash
 JICOFO_AUTH_LIFETIME=720 hours # 为已认证用户的会话超时值改为720小时
@@ -53,7 +53,7 @@ ENABLE_AUTH=1 # 是否启用身份验证
 ENABLE_GUESTS=1 # 是否允许访客
 ```
 
-如果无法使用 WebSocket，可以设置以下环境变量以回退到 HTTP 轮询和 WebRTC 数据通道
+如果无法使用 WebSocket，可以设置以下环境变量以回退到 HTTP 轮询 and WebRTC 数据通道
 
 ```bash
 ENABLE_SCTP=1
@@ -61,13 +61,13 @@ ENABLE_COLIBRI_WEBSOCKET=0
 ENABLE_XMPP_WEBSOCKET=0
 ```
 
-### 启动Jitsi
+## 启动 Jitsi
 
 ```bash
 docker compose up -d
 ```
 
-### 设置反代
+## 设置反代
 
 ```nginx
     location / {
@@ -82,7 +82,7 @@ docker compose up -d
     }
 ```
 
-### 自定义内容
+## 自定义内容
 
 ```bash
 cd /root/data/docker_data/jitsi/jitsi-meet-cfg/web
@@ -110,13 +110,13 @@ nano custom-config.js
 docker cp /root/data/docker_data/jitsi/jitsi-meet-cfg/web/custom/favicon.svg docker-jitsi-meet-web-1:/usr/share/jitsi-meet/images/favicon.svg
 ```
 
-重启web
+重启 web
 
 ```bash
 docker compose restart web
 ```
 
-### 管理主持人账号
+## 管理主持人账号
 
 进入容器
 
@@ -142,4 +142,4 @@ prosodyctl --config /config/prosody.cfg.lua unregister 用户名 meet.jitsi
 find /config/data/meet%2ejitsi/accounts -type f -exec basename {} .dat \;
 ```
 
-部分内容引用自 [Jitsi Meet官方文档](https://jitsi.github.io/handbook/docs/intro)
+部分内容引用自 [Jitsi Meet 官方文档](https://jitsi.github.io/handbook/docs/intro)

@@ -9,12 +9,12 @@ tags:
 category: 笔记
 draft: false
 ---
-### 场景示例
+## 场景示例
 
 - **描述：** 我们有一台公网 Linux 服务器（`11.11.11.11`），我们想通过访问它的 `3389` 端口，来安全地访问一台处于内网的 Windows RDP 主机（`172.16.0.19`）。
 - **拓扑图：** `你 (Windows 客户端)` -> `公网 (11.11.11.11)` -> `内网 (172.16.0.19)`
 
-### 准备工作：定义变量和环境
+## 准备工作：定义变量和环境
 
 为了让脚本清晰易懂，我们先定义变量。
 
@@ -27,7 +27,7 @@ TARGET_IP=172.16.0.19
 TARGET_PORT=3389
 ```
 
-### 步骤一：开启 Linux 内核转发
+## 步骤一：开启 Linux 内核转发
 
 这是最基础的一步。如果内核不允许IP转发，`iptables` 的所有努力都白费。
 
@@ -45,7 +45,7 @@ cat /proc/sys/net/ipv4/ip_forward
 # 然后执行 sudo sysctl -p 使其生效
 ```
 
-### 步骤二：配置 NAT 表
+## 步骤二：配置 NAT 表
 
 这是大多数教程都会讲的部分。我们需要两条规则：
 
@@ -60,7 +60,7 @@ sudo iptables -t nat -A PREROUTING -p tcp --dport $LOCAL_PORT -j DNAT --to-desti
 sudo iptables -t nat -A POSTROUTING -d $TARGET_IP -p tcp --dport $TARGET_PORT -j MASQUERADE
 ```
 
-### 步骤三：配置 filter 表（防火墙放行）
+## 步骤三：配置 filter 表（防火墙放行）
 
 这是**教程的核心**。`nat` 表只负责翻译地址，但**不负责放行**。真正决定包能否通过的是 `filter` 表的 `FORWARD` 链。
 
@@ -74,7 +74,7 @@ sudo iptables -I FORWARD 1 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
 sudo iptables -I FORWARD 2 -d $TARGET_IP -p tcp --dport $TARGET_PORT -j ACCEPT
 ```
 
-### 步骤四：持久化规则
+## 步骤四：持久化规则
 
 `iptables` 规则默认重启失效。
 
@@ -91,9 +91,9 @@ sudo iptables -I FORWARD 2 -d $TARGET_IP -p tcp --dport $TARGET_PORT -j ACCEPT
   iptables-save > /etc/sysconfig/iptables
   ```
 
-### 如何重置 netfilter-persistent 保存的内容
+## 如何重置 netfilter-persistent 保存的内容
 
-**步骤 1：清空当前内存中的所有规则**
+### 步骤 1：清空当前内存中的所有规则
 
 ```bash
 # 1. 清空 filter 表 (INPUT, OUTPUT, FORWARD)
@@ -114,7 +114,7 @@ sudo iptables -P FORWARD ACCEPT
 sudo iptables -P OUTPUT ACCEPT
 ```
 
-**步骤 2：保存这个“空”的状态**
+### 步骤 2：保存这个“空”的状态
 
 ```bash
 # 这会用“空规则”覆盖掉你之前保存的RDP转发规则

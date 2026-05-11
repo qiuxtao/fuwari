@@ -9,7 +9,7 @@ tags:
 category: 笔记
 draft: false
 ---
-### 检查是否有其他DNS管理工具
+## 检查是否有其他 DNS 管理工具
 
 ```bash
 ls -l /etc/resolv.conf
@@ -38,7 +38,7 @@ sudo systemctl disable systemd-resolved
 sudo rm /etc/resolv.conf
 ```
 
-### 修改 `/etc/resolv.conf` 文件
+## 修改 /etc/resolv.conf 文件
 
 ```bash
 sudo nano /etc/resolv.conf
@@ -46,21 +46,21 @@ sudo nano /etc/resolv.conf
 
 添加或修改 `nameserver` 行
 
-国际常用DNS：
+国际常用 DNS：
 
 ```bash
 nameserver 8.8.8.8
 nameserver 1.1.1.1
 ```
 
-中国大陆常用DNS：
+中国大陆常用 DNS：
 
 ```bash
 nameserver 119.29.29.29
 nameserver 223.6.6.6
 ```
 
-### 阻止其他服务修改 resolv.conf 文件
+## 阻止其他服务修改 resolv.conf 文件
 
 为了阻止其他服务修改 `resolv.conf` 文件，可将文件设置为不可修改：
 

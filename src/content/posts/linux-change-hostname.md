@@ -8,7 +8,7 @@ tags:
 category: 笔记
 draft: false
 ---
-### 方法一：hostnamectl 命令
+## 方法一：hostnamectl 命令
 
 这是最现代、最推荐的方法，尤其适用于基于 `systemd` 的系统
 
@@ -28,7 +28,7 @@ sudo hostnamectl set-hostname <新主机名>
 sudo nano /etc/hosts
 ```
 
-### 方法二：手动修改配置文件
+## 方法二：手动修改配置文件
 
 这种方法适用于较旧的系统，或在 `hostnamectl` 命令不可用时使用。
 
@@ -64,17 +64,17 @@ sudo hostname -F /etc/hostname
 
 > **注意：** 重新建立 SSH 连接，您应该就能看到更新后的主机名了。
 
-### 额外技巧：防止 hosts 文件被意外修改
+## 额外技巧：防止 hosts 文件被意外修改
 
 在某些情况下，其他服务（如云初始化脚本、DHCP 客户端）可能会覆盖您的 `/etc/hosts` 文件。如果您希望将其锁定，可以使用 `chattr` (change attribute) 命令。
 
-- **将文件设置为不可修改 (immutable)：**
+### 将文件设置为不可修改 (immutable)
 
 ```bash
 sudo chattr +i /etc/hosts
 ```
 
-- **将文件恢复为可修改：**
+### 将文件恢复为可修改
 
 ```bash
 sudo chattr -i /etc/hosts

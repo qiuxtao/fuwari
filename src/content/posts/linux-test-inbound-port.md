@@ -8,19 +8,21 @@ tags:
 category: 教程
 draft: false
 ---
-### 安装 netcat （Debian / Ubuntu）
+## 安装 netcat （Debian / Ubuntu）
 
 ```bash
 sudo apt install netcat-openbsd
 ```
 
-### 在本地机器上监听需要测试的端口
+## 在本地机器上监听需要测试的端口
 
 ```bash
 nc -k -l -p <port> -v
 ```
 
-### 使用 itdog 的 tcping 测试，或者在另一台机器上使用 telnet 命令测试
+## 使用 itdog 的 tcping 测试
+
+或者在另一台机器上使用 telnet 命令测试：
 
 ```bash
 telnet <ip> <port>
