@@ -9,35 +9,6 @@ tags:
 category: 笔记
 draft: false
 ---
-## 检查是否有其他 DNS 管理工具
-
-```bash
-ls -l /etc/resolv.conf
-```
-
-- 如果输出结果类似 `/etc/resolv.conf -> ../run/resolvconf/resolv.conf`
-
-则需卸载 `resolvconf` 软件包
-
-```bash
-sudo apt-get remove resolvconf
-```
-
-- 如果输出结果类似 `/etc/resolv.conf -> ../run/systemd/resolve/stub-resolv.conf`
-
-则需停用 `systemd-resolved` 服务
-
-```bash
-sudo systemctl stop systemd-resolved
-sudo systemctl disable systemd-resolved
-```
-
-移除旧的符号链接：
-
-```bash
-sudo rm /etc/resolv.conf
-```
-
 ## 修改 /etc/resolv.conf 文件
 
 ```bash
