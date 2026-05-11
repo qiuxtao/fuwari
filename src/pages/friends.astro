@@ -2,6 +2,7 @@
 import MainGridLayout from "../layouts/MainGridLayout.astro";
 import { siteConfig } from "../config";
 import FriendList from "../components/FriendList.svelte";
+import { Icon } from "astro-icon/components";
 
 // 1. 定义友链数据
 const friends = [
@@ -31,30 +32,75 @@ const friends = [
 
       <hr class="my-8 border-black/10 dark:border-white/10 dashed" />
 
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-black/75 dark:text-white/75">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
           
-          <div>
-              <h2 class="text-xl font-bold mb-4 text-[var(--primary)]">本站信息</h2>
-              <div class="text-sm leading-relaxed opacity-80">
-                  <div class="mb-2"><span class="font-bold">标题：</span>{siteConfig.title}</div>
-                  <div class="mb-2"><span class="font-bold">介绍：</span>嗨，别来无恙啊！</div>
-                  <div class="mb-2"><span class="font-bold">链接：</span>https://qiuxiaotao.com</div>
-                  <div><span class="font-bold">头像：</span>https://qiuxiaotao.com/avatar.jpg</div>
+          <!-- Site Info Card -->
+          <div class="group relative bg-black/[0.02] dark:bg-white/[0.02] border border-black/5 dark:border-white/5 rounded-2xl p-6 transition-all hover:border-[var(--primary)]/50 hover:bg-black/[0.03] dark:hover:bg-white/[0.03]">
+              <div class="flex items-center gap-2 text-lg font-bold mb-5 text-[var(--primary)] drop-shadow-sm">
+                  <Icon name="material-symbols:info-outline-rounded" class="text-2xl" />
+                  本站信息
+              </div>
+              
+              <div class="space-y-4">
+                  <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 text-sm">
+                      <span class="text-neutral-500 dark:text-neutral-400 font-bold min-w-[3.5rem] flex items-center gap-1">
+                          <Icon name="material-symbols:title-rounded" class="text-lg opacity-70" />标题
+                      </span>
+                      <span class="font-medium text-neutral-800 dark:text-neutral-200">{siteConfig.title}</span>
+                  </div>
+                  <div class="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-3 text-sm">
+                      <span class="text-neutral-500 dark:text-neutral-400 font-bold min-w-[3.5rem] flex items-center gap-1 mt-0.5">
+                          <Icon name="material-symbols:edit-note-rounded" class="text-lg opacity-70" />介绍
+                      </span>
+                      <span class="font-medium text-neutral-800 dark:text-neutral-200 leading-relaxed">嗨，别来无恙啊！</span>
+                  </div>
+                  <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 text-sm">
+                      <span class="text-neutral-500 dark:text-neutral-400 font-bold min-w-[3.5rem] flex items-center gap-1">
+                          <Icon name="material-symbols:link-rounded" class="text-lg opacity-70" />链接
+                      </span>
+                      <code class="px-2 py-0.5 bg-black/5 dark:bg-white/10 rounded font-mono text-neutral-700 dark:text-neutral-300 cursor-pointer hover:bg-black/10 dark:hover:bg-white/20 transition-colors tooltip tooltip-right group" onclick="navigator.clipboard.writeText(this.innerText.trim()); const old=this.innerText; this.innerText='已复制！'; setTimeout(()=>this.innerText=old, 1500);" title="点击复制">https://qiuxiaotao.com</code>
+                  </div>
+                  <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 text-sm">
+                      <span class="text-neutral-500 dark:text-neutral-400 font-bold min-w-[3.5rem] flex items-center gap-1">
+                          <Icon name="material-symbols:image-outline-rounded" class="text-lg opacity-70" />头像
+                      </span>
+                      <code class="px-2 py-0.5 bg-black/5 dark:bg-white/10 rounded font-mono text-neutral-700 dark:text-neutral-300 break-all cursor-pointer hover:bg-black/10 dark:hover:bg-white/20 transition-colors tooltip tooltip-right" onclick="navigator.clipboard.writeText(this.innerText.trim()); const old=this.innerText; this.innerText='已复制！'; setTimeout(()=>this.innerText=old, 1500);" title="点击复制">https://qiuxiaotao.com/avatar.jpg</code>
+                  </div>
               </div>
           </div>
 
-          <div>
-            <h2 class="text-xl font-bold mb-4 text-[var(--primary)]">申请说明</h2>
-            <ul class="list-disc list-inside space-y-1 text-sm mb-4 opacity-80">
-                <li>无侵入性广告</li>
-                <li>支持 HTTPS</li>
-                <li>有原创内容（拒绝纯导航站）</li>
-                <li>接受本站镜像缓存图标</li>
-            </ul>
-            <p class="text-sm opacity-80">
-                如果你也想和我交换友链，欢迎随时联系我：
-                <a href="mailto:nya@qiuxiaotao.com" class="text-[var(--primary)] hover:underline font-bold">nya@qiuxiaotao.com</a>
-            </p>
+          <!-- Application Instructions Card -->
+          <div class="group relative bg-black/[0.02] dark:bg-white/[0.02] border border-black/5 dark:border-white/5 rounded-2xl p-6 transition-all hover:border-[var(--primary)]/50 hover:bg-black/[0.03] dark:hover:bg-white/[0.03]">
+              <div class="flex items-center gap-2 text-lg font-bold mb-5 text-[var(--primary)] drop-shadow-sm">
+                  <Icon name="material-symbols:handshake-outline-rounded" class="text-2xl" />
+                  申请说明
+              </div>
+              
+              <ul class="space-y-3 mb-6 text-[0.95rem] text-neutral-700 dark:text-neutral-300 font-medium">
+                  <li class="flex items-center gap-2">
+                      <Icon name="material-symbols:check-circle-outline-rounded" class="text-green-500 text-lg shrink-0" />
+                      网站无侵入性广告、弹窗或恶意跳转
+                  </li>
+                  <li class="flex items-center gap-2">
+                      <Icon name="material-symbols:lock-outline" class="text-green-500 text-lg shrink-0" />
+                      至少支持 HTTPS 加密访问
+                  </li>
+                  <li class="flex items-center gap-2">
+                      <Icon name="material-symbols:article-outline-rounded" class="text-green-500 text-lg shrink-0" />
+                      包含原创优质内容 (拒绝纯导航收录站)
+                  </li>
+                  <li class="flex items-center gap-2">
+                      <Icon name="material-symbols:network-check-rounded" class="text-blue-500 text-lg shrink-0" />
+                      接受本站镜像缓存图标
+                  </li>
+              </ul>
+              
+              <div class="mt-auto text-sm font-medium text-neutral-700 dark:text-neutral-300 pt-2 border-t border-black/5 dark:border-white/5">
+                  欢迎根据以上格式准备你的信息，并发送邮件联系我：
+                  <a href="mailto:nya@qiuxiaotao.com" class="inline-flex mt-2 items-center px-3 py-1.5 bg-black/5 dark:bg-white/10 rounded-lg text-[var(--primary)] font-bold hover:bg-[var(--primary)] hover:text-white transition-colors">
+                      nya@qiuxiaotao.com
+                  </a>
+              </div>
           </div>
 
       </div>
