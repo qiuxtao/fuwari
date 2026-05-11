@@ -58,13 +58,13 @@ const friends = [
                       <span class="text-neutral-500 dark:text-neutral-400 font-bold min-w-[3.5rem] flex items-center gap-1">
                           <Icon name="material-symbols:link-rounded" class="text-lg opacity-70" />链接
                       </span>
-                      <code class="px-2 py-0.5 bg-black/5 dark:bg-white/10 rounded font-mono text-neutral-700 dark:text-neutral-300 cursor-pointer hover:bg-black/10 dark:hover:bg-white/20 transition-colors tooltip tooltip-right group" onclick="navigator.clipboard.writeText(this.innerText.trim()); const old=this.innerText; this.innerText='已复制！'; setTimeout(()=>this.innerText=old, 1500);" title="点击复制">https://qiuxiaotao.com</code>
+                      <code class="px-2 py-0.5 bg-black/5 dark:bg-white/10 rounded font-mono text-neutral-700 dark:text-neutral-300 cursor-pointer hover:bg-black/10 dark:hover:bg-white/20 transition-colors tooltip tooltip-right group" data-copy-value="https://qiuxiaotao.com" role="button" tabindex="0" title="点击复制">https://qiuxiaotao.com</code>
                   </div>
                   <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 text-sm">
                       <span class="text-neutral-500 dark:text-neutral-400 font-bold min-w-[3.5rem] flex items-center gap-1">
                           <Icon name="material-symbols:image-outline-rounded" class="text-lg opacity-70" />头像
                       </span>
-                      <code class="px-2 py-0.5 bg-black/5 dark:bg-white/10 rounded font-mono text-neutral-700 dark:text-neutral-300 break-all cursor-pointer hover:bg-black/10 dark:hover:bg-white/20 transition-colors tooltip tooltip-right" onclick="navigator.clipboard.writeText(this.innerText.trim()); const old=this.innerText; this.innerText='已复制！'; setTimeout(()=>this.innerText=old, 1500);" title="点击复制">https://qiuxiaotao.com/avatar.jpg</code>
+                      <code class="px-2 py-0.5 bg-black/5 dark:bg-white/10 rounded font-mono text-neutral-700 dark:text-neutral-300 break-all cursor-pointer hover:bg-black/10 dark:hover:bg-white/20 transition-colors tooltip tooltip-right" data-copy-value="https://qiuxiaotao.com/avatar.jpg" role="button" tabindex="0" title="点击复制">https://qiuxiaotao.com/avatar.jpg</code>
                   </div>
               </div>
           </div>
@@ -108,3 +108,41 @@ const friends = [
     </div>
   </div>
 </MainGridLayout>
+
+<script>
+const copyFeedbackText = "已复制！";
+
+function initCopyCodes() {
+    document.querySelectorAll<HTMLElement>("[data-copy-value]").forEach((element) => {
+        if (element.dataset.copyBound === "true") return;
+
+        element.dataset.copyBound = "true";
+
+        const copyText = async () => {
+            const originalText = element.textContent ?? "";
+            const textToCopy = element.dataset.copyValue ?? originalText.trim();
+
+            await navigator.clipboard.writeText(textToCopy);
+            element.textContent = copyFeedbackText;
+            window.setTimeout(() => {
+                element.textContent = originalText;
+            }, 1500);
+        };
+
+        element.addEventListener("click", () => {
+            void copyText();
+        });
+
+        element.addEventListener("keydown", (event) => {
+            if (event.key !== "Enter" && event.key !== " ") return;
+
+            event.preventDefault();
+            void copyText();
+        });
+    });
+}
+
+initCopyCodes();
+document.addEventListener("astro:page-load", initCopyCodes);
+document.addEventListener("swup:contentReplaced", initCopyCodes);
+</script>

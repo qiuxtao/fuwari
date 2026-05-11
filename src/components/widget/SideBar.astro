@@ -10,8 +10,8 @@ interface Props {
 	headings?: MarkdownHeading[];
 }
 
-const { class: className, headings } = Astro.props;
-const isPost = headings && headings.length > 0;
+const { class: className, headings = [] } = Astro.props;
+const isPost = headings.length > 0;
 ---
 <div id="sidebar" class:list={[className, "w-full flex flex-col gap-4"]}>
     

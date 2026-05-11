@@ -60,7 +60,17 @@ const toc = buildToc(headings);
 </table-of-contents>
 
 <script>
-function generateTocHTML(items, level = 0) {
+interface HeadingData {
+    depth: number;
+    slug: string;
+    text: string;
+}
+
+interface TocDataItem extends HeadingData {
+    children: TocDataItem[];
+}
+
+function generateTocHTML(items: TocDataItem[], level = 0) {
     if (!items || items.length === 0) return '';
     let html = `<div class="flex flex-col gap-0">`;
     items.forEach((item, index) => {
@@ -95,9 +105,9 @@ function generateTocHTML(items, level = 0) {
     return html;
 }
 
-function buildTocData(headings) {
-    const toc = [];
-    const parentStack = [];
+function buildTocData(headings: HeadingData[]): TocDataItem[] {
+    const toc: TocDataItem[] = [];
+    const parentStack: TocDataItem[] = [];
     headings.forEach((h) => {
         let text = h.text;
         if (text.endsWith('#')) text = text.substring(0, text.length - 1);
@@ -136,7 +146,7 @@ class TableOfContents extends HTMLElement {
 
         if (buffer && buffer.dataset.headings) {
             try {
-                const headings = JSON.parse(buffer.dataset.headings);
+                const headings = JSON.parse(buffer.dataset.headings) as HeadingData[];
                 if (headings.length > 0) {
                     hasTOC = true;
                     const tocData = buildTocData(headings);
@@ -157,8 +167,8 @@ class TableOfContents extends HTMLElement {
     }
 
     // 核心修改：分离“布局位置”和“内容显示”的逻辑
-    toggleSidebarLayout(hasTOC) {
-        const tocCard = this.closest('.toc-card');
+    toggleSidebarLayout(hasTOC: boolean) {
+        const tocCard = this.closest('.toc-card') as HTMLElement | null;
         const sidebarProfile = document.getElementById('sidebar-profile');
         const sidebarWidgets = document.getElementById('sidebar-widgets');
         const sidebar = document.getElementById('sidebar');
@@ -264,7 +274,7 @@ class TableOfContents extends HTMLElement {
         }
     }
 
-    handleAnchorClick = (event: Event) => {};
+    handleAnchorClick = () => {};
 
     onScroll = () => {
         if (!this.ticking) {
@@ -303,7 +313,7 @@ class TableOfContents extends HTMLElement {
             const buffer = document.getElementById('toc-data-buffer');
             let hasData = false;
             if (buffer && buffer.dataset.headings) {
-                hasData = JSON.parse(buffer.dataset.headings).length > 0;
+                hasData = (JSON.parse(buffer.dataset.headings) as HeadingData[]).length > 0;
             }
             this.toggleSidebarLayout(hasData);
         });
