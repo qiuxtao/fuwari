@@ -1,0 +1,392 @@
+<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>秋晓桃の神秘小窝</title><description>No description</description><link>https://qiuxiaotao.com/</link><language>zh_CN</language><item><title>Linux 设置 SSH 密钥登录</title><link>https://qiuxiaotao.com/posts/linux-ssh-key-setup/</link><guid isPermaLink="true">https://qiuxiaotao.com/posts/linux-ssh-key-setup/</guid><description>记录在 Linux 中生成 SSH 密钥、配置公钥登录、调整权限并关闭密码登录的常用步骤</description><pubDate>Fri, 15 May 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h2&gt;前言&lt;/h2&gt;
+&lt;p&gt;SSH 密钥登录比密码登录更适合长期管理服务器：本地保存私钥，服务器只保存公钥。只要私钥不泄露，就不需要把密码暴露在每次登录过程中。&lt;/p&gt;
+&lt;p&gt;这篇笔记记录从生成密钥、上传公钥、验证登录，到关闭密码登录的完整流程。&lt;/p&gt;
+&lt;h2&gt;生成 SSH 密钥&lt;/h2&gt;
+&lt;p&gt;在本地电脑执行：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;ssh-keygen -t ed25519 -C &quot;your_email@example.com&quot;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;一路回车会生成默认密钥文件：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;~/.ssh/id_ed25519
+~/.ssh/id_ed25519.pub
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;其中 &lt;code&gt;id_ed25519&lt;/code&gt; 是私钥；&lt;code&gt;id_ed25519.pub&lt;/code&gt; 是公钥。将他们都下载到本地，并删除服务器上的文件。&lt;/p&gt;
+&lt;h2&gt;配置 authorized_keys&lt;/h2&gt;
+&lt;p&gt;编辑公钥文件：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;nano ~/.ssh/authorized_keys
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;把本地 &lt;code&gt;id_ed25519.pub&lt;/code&gt; 的内容粘贴进去，保存后设置权限：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;chmod 700 ~/.ssh
+chmod 600 ~/.ssh/authorized_keys
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;权限不正确时，SSH 服务可能会拒绝使用密钥登录。&lt;/p&gt;
+&lt;h2&gt;使用密钥登录&lt;/h2&gt;
+&lt;p&gt;在本地测试：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;ssh -i ~/.ssh/id_ed25519 用户名@服务器IP
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;如果使用的是默认密钥文件，通常可以直接登录：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;ssh 用户名@服务器IP
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2&gt;关闭密码登录&lt;/h2&gt;
+&lt;p&gt;确认密钥登录成功后，再关闭密码登录。建议先保留一个已经登录的 SSH 窗口，避免配置错误导致无法重新连接。&lt;/p&gt;
+&lt;p&gt;编辑 SSH 服务端配置：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;sudo nano /etc/ssh/sshd_config
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;确认或添加以下配置：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;PubkeyAuthentication yes
+PasswordAuthentication no
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;保存后先检查配置是否正确：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;sudo sshd -t
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;没有输出表示配置语法正常，然后重新加载 SSH 服务：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;sudo systemctl reload sshd
+&lt;/code&gt;&lt;/pre&gt;
+</content:encoded></item><item><title>Linux 设置时间同步</title><link>https://qiuxiaotao.com/posts/linux-time-sync/</link><guid isPermaLink="true">https://qiuxiaotao.com/posts/linux-time-sync/</guid><description>记录查看时间同步状态、清理其他时间同步服务、安装启用 systemd-timesyncd 并修改 NTP 服务器地址的常用步骤</description><pubDate>Fri, 15 May 2026 00:00:00 GMT</pubDate><content:encoded>&lt;h2&gt;查看当前是否设置了时间同步&lt;/h2&gt;
+&lt;p&gt;先查看系统时间、时区和 NTP 状态：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;timedatectl
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;重点看这几行：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;System clock synchronized: yes
+NTP service: active
+RTC in local TZ: no
+&lt;/code&gt;&lt;/pre&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;System clock synchronized: yes&lt;/code&gt; 表示系统时钟已经同步。&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;NTP service: active&lt;/code&gt; 表示已经启用时间同步服务。&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;RTC in local TZ: no&lt;/code&gt; 通常保持默认即可，表示硬件时钟使用 UTC。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;如果想确认当前是否由 &lt;code&gt;systemd-timesyncd&lt;/code&gt; 负责同步：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;systemctl status systemd-timesyncd
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2&gt;卸载其他时间同步服务&lt;/h2&gt;
+&lt;p&gt;同一台机器上建议只保留一个时间同步服务，否则容易出现互相抢占或配置不生效的问题。&lt;/p&gt;
+&lt;p&gt;卸载常见的其他时间同步服务：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;sudo apt purge -y chrony ntp ntpsec openntpd
+sudo apt autoremove -y
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;如果某些软件包没有安装，提示找不到或未安装可以忽略。&lt;/p&gt;
+&lt;h2&gt;安装并启用 systemd-timesyncd&lt;/h2&gt;
+&lt;p&gt;安装 &lt;code&gt;systemd-timesyncd&lt;/code&gt;：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;sudo apt update
+sudo apt install -y systemd-timesyncd
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;开启系统 NTP 同步开关：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;sudo timedatectl set-ntp true
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;确认服务状态：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;systemctl status systemd-timesyncd
+timedatectl
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;在 Debian/Ubuntu 上，&lt;code&gt;systemd-timesyncd&lt;/code&gt; 安装后通常会自动启动。如果检查发现服务没有启动，再执行：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;sudo systemctl enable --now systemd-timesyncd
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2&gt;修改 NTP 服务器地址&lt;/h2&gt;
+&lt;p&gt;编辑 &lt;code&gt;systemd-timesyncd&lt;/code&gt; 配置文件：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;sudo nano /etc/systemd/timesyncd.conf
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;找到或添加 &lt;code&gt;[Time]&lt;/code&gt; 配置段，例如：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;[Time]
+NTP=ntp.aliyun.com time1.cloud.tencent.com cn.pool.ntp.org
+FallbackNTP=pool.ntp.org time.cloudflare.com
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;说明：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;NTP=&lt;/code&gt; 是优先使用的时间服务器，可以写多个，使用空格分隔。&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;FallbackNTP=&lt;/code&gt; 是备用时间服务器，当主服务器不可用时使用。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;保存后重启服务：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;sudo systemctl restart systemd-timesyncd
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;再次查看同步状态：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;timedatectl
+&lt;/code&gt;&lt;/pre&gt;
+</content:encoded></item><item><title>Linux 使用 curl 快速查看系统出站公网 IP</title><link>https://qiuxiaotao.com/posts/linux-check-outbound-ip/</link><guid isPermaLink="true">https://qiuxiaotao.com/posts/linux-check-outbound-ip/</guid><description>Linux 终端下如何使用 curl 命令快速查询服务器的公网出站 IP 地址</description><pubDate>Sat, 21 Feb 2026 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;在日常的 Linux 服务器管理与运维中，我们经常需要确认当前机器的公网出站 IP。无论是为了配置白名单、检查代理是否生效，还是单纯确认网络环境，以下几个 &lt;code&gt;curl&lt;/code&gt; 命令都非常实用且高效。&lt;/p&gt;
+&lt;h2&gt;国际网络环境&lt;/h2&gt;
+&lt;p&gt;如果你的服务器位于海外，或者你需要测试服务器访问国际互联网时的出口 IP，可以使用 &lt;code&gt;ipinfo.io&lt;/code&gt;。这个接口不仅会返回你的 IP 地址，通常还会附带 ASN、地理位置 and 运营商等实用信息：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;curl ipinfo.io
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2&gt;大陆网络环境&lt;/h2&gt;
+&lt;p&gt;对于国内的云服务器或本地网络，使用 &lt;code&gt;ipip.net&lt;/code&gt; 提供的接口响应速度更快，且国内 IP 库定位非常准确：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;curl myip.ipip.net
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2&gt;查询 IPv6 地址&lt;/h2&gt;
+&lt;p&gt;随着 IPv6 的逐渐普及，有时我们需要专门确认服务器的 IPv6 出网是否正常。通过给 &lt;code&gt;curl&lt;/code&gt; 加上 &lt;code&gt;-6&lt;/code&gt; 参数，强制使用 IPv6 网络去请求 &lt;code&gt;ip.sb&lt;/code&gt; 即可实现查询：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;curl ip.sb -6
+&lt;/code&gt;&lt;/pre&gt;
+</content:encoded></item><item><title>iptables 端口转发教程</title><link>https://qiuxiaotao.com/posts/iptables-port-forwarding/</link><guid isPermaLink="true">https://qiuxiaotao.com/posts/iptables-port-forwarding/</guid><description>使用 iptables 配置公网服务器端口转发到内网主机</description><pubDate>Tue, 28 Oct 2025 00:00:00 GMT</pubDate><content:encoded>&lt;h2&gt;场景示例&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;描述：&lt;/strong&gt; 我们有一台公网 Linux 服务器（&lt;code&gt;11.11.11.11&lt;/code&gt;），我们想通过访问它的 &lt;code&gt;3389&lt;/code&gt; 端口，来安全地访问一台处于内网的 Windows RDP 主机（&lt;code&gt;172.16.0.19&lt;/code&gt;）。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;拓扑图：&lt;/strong&gt; &lt;code&gt;你 (Windows 客户端)&lt;/code&gt; -&amp;gt; &lt;code&gt;公网 (11.11.11.11)&lt;/code&gt; -&amp;gt; &lt;code&gt;内网 (172.16.0.19)&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;准备工作：定义变量和环境&lt;/h2&gt;
+&lt;p&gt;为了让脚本清晰易懂，我们先定义变量。&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;# 公网服务器要监听的端口
+LOCAL_PORT=3389
+# 真正提供服务的目标内网IP
+TARGET_IP=172.16.0.19
+# 目标内网IP的服务端口
+TARGET_PORT=3389
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2&gt;步骤一：开启 Linux 内核转发&lt;/h2&gt;
+&lt;p&gt;这是最基础的一步。如果内核不允许IP转发，&lt;code&gt;iptables&lt;/code&gt; 的所有努力都白费。&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;# 1. 临时开启
+sudo sysctl -w net.ipv4.ip_forward=1
+
+# 2. 检查是否成功
+cat /proc/sys/net/ipv4/ip_forward
+# (确保返回 1)
+
+# 3. 永久开启（推荐）
+# sudo nano /etc/sysctl.conf
+# 找到 net.ipv4.ip_forward=1 并取消注释
+# 然后执行 sudo sysctl -p 使其生效
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2&gt;步骤二：配置 NAT 表&lt;/h2&gt;
+&lt;p&gt;这是大多数教程都会讲的部分。我们需要两条规则：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;strong&gt;PREROUTING (DNAT):&lt;/strong&gt; 把“进来”的包，目标地址换成内网 RDP 主机。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;POSTROUTING (SNAT/MASQUERADE):&lt;/strong&gt; 把“出去”的包，源地址换成 Linux 服务器。&lt;strong&gt;（关键：否则 RDP 主机会直接回复给你的客户端，而不是回复给 Linux 服务器）&lt;/strong&gt;&lt;/li&gt;
+&lt;/ol&gt;
+&lt;pre&gt;&lt;code&gt;# 1. PREROUTING 规则 (DNAT)：修改目标地址
+sudo iptables -t nat -A PREROUTING -p tcp --dport $LOCAL_PORT -j DNAT --to-destination $TARGET_IP:$TARGET_PORT
+
+# 2. POSTROUTING 规则 (MASQUERADE)：修改源地址
+sudo iptables -t nat -A POSTROUTING -d $TARGET_IP -p tcp --dport $TARGET_PORT -j MASQUERADE
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2&gt;步骤三：配置 filter 表（防火墙放行）&lt;/h2&gt;
+&lt;p&gt;这是&lt;strong&gt;教程的核心&lt;/strong&gt;。&lt;code&gt;nat&lt;/code&gt; 表只负责翻译地址，但&lt;strong&gt;不负责放行&lt;/strong&gt;。真正决定包能否通过的是 &lt;code&gt;filter&lt;/code&gt; 表的 &lt;code&gt;FORWARD&lt;/code&gt; 链。&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;# 注意：我们用 -I (Insert) 把规则插入到链的顶部，确保它们在 Docker 等规则之前被匹配。
+
+# 1. 允许“已建立”和“相关”的连接（允许 RDP 的“返回”流量）
+sudo iptables -I FORWARD 1 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+
+# 2. 允许“新”的连接（允许你客户端的“发起”流量）
+sudo iptables -I FORWARD 2 -d $TARGET_IP -p tcp --dport $TARGET_PORT -j ACCEPT
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2&gt;步骤四：持久化规则&lt;/h2&gt;
+&lt;p&gt;&lt;code&gt;iptables&lt;/code&gt; 规则默认重启失效。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Debian/Ubuntu:&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;sudo apt-get install iptables-persistent
+sudo netfilter-persistent save
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;CentOS/RHEL (旧版):&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;service iptables save
+# 或
+iptables-save &amp;gt; /etc/sysconfig/iptables
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;如何重置 netfilter-persistent 保存的内容&lt;/h2&gt;
+&lt;h3&gt;步骤 1：清空当前内存中的所有规则&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;# 1. 清空 filter 表 (INPUT, OUTPUT, FORWARD)
+sudo iptables -F
+sudo iptables -X
+
+# 2. 清空 nat 表 (PREROUTING, POSTROUTING)
+sudo iptables -t nat -F
+sudo iptables -t nat -X
+
+# 3. 清空 mangle 表 (可选，以防万一)
+sudo iptables -t mangle -F
+sudo iptables -t mangle -X
+
+# 4. (重要) 把默认策略改回 ACCEPT，防止SSH断开
+sudo iptables -P INPUT ACCEPT
+sudo iptables -P FORWARD ACCEPT
+sudo iptables -P OUTPUT ACCEPT
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;步骤 2：保存这个“空”的状态&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;# 这会用“空规则”覆盖掉你之前保存的RDP转发规则
+sudo netfilter-persistent save
+&lt;/code&gt;&lt;/pre&gt;
+</content:encoded></item><item><title>Linux 测试入站端口连接</title><link>https://qiuxiaotao.com/posts/linux-test-inbound-port/</link><guid isPermaLink="true">https://qiuxiaotao.com/posts/linux-test-inbound-port/</guid><description>解决服务器端口连通性排查问题，介绍如何使用 netcat 开启本地监听并进行 TCP 入站测试</description><pubDate>Wed, 13 Aug 2025 00:00:00 GMT</pubDate><content:encoded>&lt;h2&gt;安装 netcat （Debian / Ubuntu）&lt;/h2&gt;
+&lt;pre&gt;&lt;code&gt;sudo apt install netcat-openbsd
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2&gt;在本地机器上监听需要测试的端口&lt;/h2&gt;
+&lt;pre&gt;&lt;code&gt;nc -k -l -p &amp;lt;port&amp;gt; -v
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2&gt;使用 itdog 的 tcping 测试&lt;/h2&gt;
+&lt;p&gt;或者在另一台机器上使用 telnet 命令测试：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;telnet &amp;lt;ip&amp;gt; &amp;lt;port&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+</content:encoded></item><item><title>Linux 修改主机名</title><link>https://qiuxiaotao.com/posts/linux-change-hostname/</link><guid isPermaLink="true">https://qiuxiaotao.com/posts/linux-change-hostname/</guid><description>记录在 Linux 系统中永久修改主机名的常用方法，以及锁定 hosts 文件的实用技巧</description><pubDate>Mon, 11 Aug 2025 00:00:00 GMT</pubDate><content:encoded>&lt;h2&gt;方法一：hostnamectl 命令&lt;/h2&gt;
+&lt;p&gt;这是最现代、最推荐的方法，尤其适用于基于 &lt;code&gt;systemd&lt;/code&gt; 的系统&lt;/p&gt;
+&lt;h3&gt;设置新主机名&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;sudo hostnamectl set-hostname &amp;lt;新主机名&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;blockquote&gt;
+&lt;p&gt;&lt;strong&gt;说明：&lt;/strong&gt; 此命令会同时更新&lt;strong&gt;静态主机名&lt;/strong&gt; (保存在 &lt;code&gt;/etc/hostname&lt;/code&gt;) 和&lt;strong&gt;临时主机名&lt;/strong&gt; (内核当前使用的主机名)，效果立即显现。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h3&gt;更新 /etc/hosts 文件&lt;/h3&gt;
+&lt;p&gt;为了确保本地解析正确，需手动更新 &lt;code&gt;hosts&lt;/code&gt; 文件。&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;sudo nano /etc/hosts
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2&gt;方法二：手动修改配置文件&lt;/h2&gt;
+&lt;p&gt;这种方法适用于较旧的系统，或在 &lt;code&gt;hostnamectl&lt;/code&gt; 命令不可用时使用。&lt;/p&gt;
+&lt;h3&gt;修改主机名配置文件&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;对于 Ubuntu/Debian 及其衍生系统：&lt;/strong&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;pre&gt;&lt;code&gt;sudo nano /etc/hostname
+&lt;/code&gt;&lt;/pre&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;对于 CentOS/RHEL 及其衍生系统：&lt;/strong&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;pre&gt;&lt;code&gt;sudo nano /etc/sysconfig/network
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;更新 /etc/hosts 文件&lt;/h3&gt;
+&lt;p&gt;为了确保本地解析正确，需手动更新 &lt;code&gt;hosts&lt;/code&gt; 文件。&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;sudo nano /etc/hosts
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;使更改立即生效&lt;/h3&gt;
+&lt;p&gt;&lt;strong&gt;重要：&lt;/strong&gt; 手动修改配置文件后，更改只会在&lt;strong&gt;下次重启&lt;/strong&gt;后生效。要让它立即生效 (仅限当前会话)，请执行以下命令：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;sudo hostname -F /etc/hostname
+&lt;/code&gt;&lt;/pre&gt;
+&lt;blockquote&gt;
+&lt;p&gt;&lt;strong&gt;注意：&lt;/strong&gt; 重新建立 SSH 连接，您应该就能看到更新后的主机名了。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h2&gt;额外技巧：防止 hosts 文件被意外修改&lt;/h2&gt;
+&lt;p&gt;在某些情况下，其他服务（如云初始化脚本、DHCP 客户端）可能会覆盖您的 &lt;code&gt;/etc/hosts&lt;/code&gt; 文件。如果您希望将其锁定，可以使用 &lt;code&gt;chattr&lt;/code&gt; (change attribute) 命令。&lt;/p&gt;
+&lt;h3&gt;将文件设置为不可修改 (immutable)&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;sudo chattr +i /etc/hosts
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;将文件恢复为可修改&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;sudo chattr -i /etc/hosts
+&lt;/code&gt;&lt;/pre&gt;
+</content:encoded></item><item><title>Linux 开启 BBR</title><link>https://qiuxiaotao.com/posts/linux-bbr-setup/</link><guid isPermaLink="true">https://qiuxiaotao.com/posts/linux-bbr-setup/</guid><description>记录在 Linux 开启 BBR 拥塞控制算法以提升网络吞吐量、缓解丢包的操作笔记</description><pubDate>Tue, 22 Apr 2025 00:00:00 GMT</pubDate><content:encoded>&lt;h2&gt;前言&lt;/h2&gt;
+&lt;p&gt;如果你的 Linux 服务器是普通的跨境线路，可能在晚高峰因为高丢包率的影响很难跑起来带宽，或者受大陆运营商网间结算或者省间结算的影响，跨运营商或者跨省也会有高丢包率，导致跑不起来带宽，可以尝试开启 &lt;a href=&quot;https://github.com/google/bbr&quot;&gt;BBR&lt;/a&gt; 来缓解以上问题&lt;/p&gt;
+&lt;h2&gt;前提条件&lt;/h2&gt;
+&lt;p&gt;你的 Linux 内核版本需要 &lt;strong&gt;4.9 或更高&lt;/strong&gt;，BBR 模块自该版本起被包含在主线内核中&lt;/p&gt;
+&lt;p&gt;查看你的内核版本：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;uname -r
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;确保输出的版本号大于 4.9.0 或更高，如果版本过低，你需要先升级你的 Linux 内核&lt;/p&gt;
+&lt;h2&gt;开启命令&lt;/h2&gt;
+&lt;pre&gt;&lt;code&gt;echo &quot;net.core.default_qdisc=fq&quot; &amp;gt;&amp;gt; /etc/sysctl.conf # 设置默认的队列规程为 fq
+echo &quot;net.ipv4.tcp_congestion_control=bbr&quot; &amp;gt;&amp;gt; /etc/sysctl.conf # 将 TCP 拥塞控制算法设置为 BBR
+sysctl -p # 应用配置
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2&gt;验证 BBR 是否已启用&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;检查默认 TCP 拥塞控制算法是否为 BBR&lt;/li&gt;
+&lt;/ul&gt;
+&lt;pre&gt;&lt;code&gt;sysctl net.ipv4.tcp_congestion_control
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;预期输出：&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;net.ipv4.tcp_congestion_control = bbr&lt;/code&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;检查默认队列规程是否设置为 fq&lt;/li&gt;
+&lt;/ul&gt;
+&lt;pre&gt;&lt;code&gt;sysctl net.core.default_qdisc
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;预期输出：&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;net.core.default_qdisc = fq&lt;/code&gt;&lt;/p&gt;
+&lt;h2&gt;如何恢复默认配置&lt;/h2&gt;
+&lt;pre&gt;&lt;code&gt;sudo sed -i &apos;/net.core.default_qdisc=fq/d&apos; /etc/sysctl.conf
+sudo sed -i &apos;/net.ipv4.tcp_congestion_control=bbr/d&apos; /etc/sysctl.conf
+sysctl -p # 应用配置
+&lt;/code&gt;&lt;/pre&gt;
+</content:encoded></item><item><title>Linux 手动管理 DNS</title><link>https://qiuxiaotao.com/posts/linux-manual-dns/</link><guid isPermaLink="true">https://qiuxiaotao.com/posts/linux-manual-dns/</guid><description>解决 Linux 下 DNS 配置经常被系统服务覆盖的问题</description><pubDate>Thu, 17 Apr 2025 00:00:00 GMT</pubDate><content:encoded>&lt;h2&gt;修改 /etc/resolv.conf 文件&lt;/h2&gt;
+&lt;pre&gt;&lt;code&gt;sudo nano /etc/resolv.conf
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;添加或修改 &lt;code&gt;nameserver&lt;/code&gt; 行&lt;/p&gt;
+&lt;p&gt;国际常用 DNS：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;nameserver 8.8.8.8
+nameserver 1.1.1.1
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;中国大陆常用 DNS：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;nameserver 119.29.29.29
+nameserver 223.6.6.6
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2&gt;阻止其他服务修改 resolv.conf 文件&lt;/h2&gt;
+&lt;p&gt;为了阻止其他服务修改 &lt;code&gt;resolv.conf&lt;/code&gt; 文件，可将文件设置为不可修改：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;sudo chattr +i /etc/resolv.conf
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;将文件恢复为可修改：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;sudo chattr -i /etc/resolv.conf
+&lt;/code&gt;&lt;/pre&gt;
+</content:encoded></item><item><title>搭建一个开源的视频会议项目——Jitsi Meet</title><link>https://qiuxiaotao.com/posts/deploy-jitsi-meet/</link><guid isPermaLink="true">https://qiuxiaotao.com/posts/deploy-jitsi-meet/</guid><description>手把手教你部署 Jitsi Meet</description><pubDate>Mon, 24 Feb 2025 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;现在免费的视频会议基本上都会限制时长，虽然说腾讯会议和 Microsoft Teams 都支持两人会议不限时，但是他们都会有些缺陷：Teams 是因为服务器不在国内，延迟较大，视频和屏幕共享几乎卡到了不可用的状态；用腾讯会议的时候我的朋友经常会抱怨我共享屏幕的声音太小了，我知道腾讯会议把共享屏幕的声音降低是因为可以防止覆盖掉麦克风的声音，但是为什么不提供一个选项可以开关这个功能呢？&lt;/p&gt;
+&lt;p&gt;接下来要搭建的这个项目—— Jitsi Meet，就没有这些问题，它开源免费、可以直接在网页加入、支持端到端加密、如果会议里只有两个人还支持p2p（已知的缺点是不支持共享屏幕的时候进行批注）&lt;/p&gt;
+&lt;h2&gt;创建并进入安装目录&lt;/h2&gt;
+&lt;pre&gt;&lt;code&gt;mkdir -p /root/data/docker_data/jitsi
+cd /root/data/docker_data/jitsi
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2&gt;拉取项目文件并进入项目目录&lt;/h2&gt;
+&lt;pre&gt;&lt;code&gt;git clone https://github.com/jitsi/docker-jitsi-meet
+cd docker-jitsi-meet
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2&gt;复制示例配置文件并生成密钥&lt;/h2&gt;
+&lt;pre&gt;&lt;code&gt;cp env.example .env 
+./gen-passwords.sh 
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2&gt;编辑配置文件&lt;/h2&gt;
+&lt;pre&gt;&lt;code&gt;nano .env
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2&gt;需要编辑的配置&lt;/h2&gt;
+&lt;pre&gt;&lt;code&gt;JICOFO_AUTH_LIFETIME=720 hours # 为已认证用户的会话超时值改为720小时
+CONFIG=/root/data/docker_data/jitsi/jitsi-meet-cfg # 自定义配置文件目录
+HTTP_PORT=8000 # http端口
+HTTPS_PORT=8443 # https端口
+TZ=Asia/Shanghai # 时区
+PUBLIC_URL=https://meeting.qiuxiaotao.cn/ # 公开访问的URL
+ENABLE_AUTH=1 # 是否启用身份验证
+ENABLE_GUESTS=1 # 是否允许访客
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;如果无法使用 WebSocket，可以设置以下环境变量以回退到 HTTP 轮询 and WebRTC 数据通道&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;ENABLE_SCTP=1
+ENABLE_COLIBRI_WEBSOCKET=0
+ENABLE_XMPP_WEBSOCKET=0
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2&gt;启动 Jitsi&lt;/h2&gt;
+&lt;pre&gt;&lt;code&gt;docker compose up -d
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2&gt;设置反代&lt;/h2&gt;
+&lt;pre&gt;&lt;code&gt;    location / {
+        proxy_pass https://127.0.0.1:8443/;
+        proxy_redirect off;
+        proxy_set_header Host $host; 
+        proxy_set_header X-Forwarded-Proto $scheme; 
+        proxy_set_header X-Real-IP $remote_addr; 
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for; 
+        proxy_set_header Upgrade $http_upgrade; 
+        proxy_set_header Connection $http_connection; 
+    }
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2&gt;自定义内容&lt;/h2&gt;
+&lt;pre&gt;&lt;code&gt;cd /root/data/docker_data/jitsi/jitsi-meet-cfg/web
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;cp interface_config.js custom-interface_config.js
+nano custom-interface_config.js
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;去除 Jitsi 水印&lt;/strong&gt;：找到 &lt;code&gt;SHOW_JITSI_WATERMARK&lt;/code&gt; 将 &lt;code&gt;true&lt;/code&gt; 改为 &lt;code&gt;false&lt;/code&gt;&lt;br /&gt;
+**修改应用名称：**找到 &lt;code&gt;APP_NAME&lt;/code&gt; ，自定义名称&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;cp config.js custom-config.js
+nano custom-config.js
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;**设置必须输入昵称才能进入会议：**找到 &lt;code&gt;config.requireDisplayName&lt;/code&gt; 将 &lt;code&gt;false&lt;/code&gt; 改为 &lt;code&gt;true&lt;/code&gt;&lt;br /&gt;
+&lt;strong&gt;将头像库自定义为&lt;/strong&gt; &lt;code&gt;weavatar.com&lt;/code&gt; **：**找到 &lt;code&gt;var config = {};&lt;/code&gt; ，在下面加上 &lt;code&gt;config.gravatarBaseURL = &apos;https://weavatar.com/avatar/&apos;;&lt;/code&gt; 这一行&lt;/p&gt;
+&lt;p&gt;**修改图标：**将本地 &lt;code&gt;favicon.svg&lt;/code&gt; 替换容器内的 &lt;code&gt;favicon.svg&lt;/code&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;docker cp /root/data/docker_data/jitsi/jitsi-meet-cfg/web/custom/favicon.svg docker-jitsi-meet-web-1:/usr/share/jitsi-meet/images/favicon.svg
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;重启 web&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;docker compose restart web
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2&gt;管理主持人账号&lt;/h2&gt;
+&lt;p&gt;进入容器&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;docker compose exec prosody /bin/bash
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;新增用户&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;prosodyctl --config /config/prosody.cfg.lua register 用户名 meet.jitsi 密码
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;删除用户&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;prosodyctl --config /config/prosody.cfg.lua unregister 用户名 meet.jitsi
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;列出所有已注册用户&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;find /config/data/meet%2ejitsi/accounts -type f -exec basename {} .dat \;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;部分内容引用自 &lt;a href=&quot;https://jitsi.github.io/handbook/docs/intro&quot;&gt;Jitsi Meet 官方文档&lt;/a&gt;&lt;/p&gt;
+</content:encoded></item></channel></rss>
