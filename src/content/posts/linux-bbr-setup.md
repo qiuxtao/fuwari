@@ -57,8 +57,16 @@ sysctl net.core.default_qdisc
 
 ## 如何恢复默认配置
 
+清理配置文件中的修改：
+
 ```bash
 sudo sed -i '/net.core.default_qdisc=fq/d' /etc/sysctl.conf
 sudo sed -i '/net.ipv4.tcp_congestion_control=bbr/d' /etc/sysctl.conf
-sysctl -p # 应用配置
+```
+
+通过命令直接在内存中把算法切回默认值（不需要重启）：
+
+```bash
+sudo sysctl -w net.core.default_qdisc=fq_codel
+sudo sysctl -w net.ipv4.tcp_congestion_control=cubic
 ```
