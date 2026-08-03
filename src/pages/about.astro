@@ -22,34 +22,37 @@ const husbandConfig = {
     <div class="flex flex-col w-full gap-6">
         <!-- Tab Switcher -->
         <div class="flex justify-center onload-animation" style="animation-delay: 100ms;">
-            <div class="inline-flex items-center p-1.5 rounded-full bg-[var(--card-bg)] border border-black/5 dark:border-white/10 shadow-sm relative backdrop-blur-md">
+            <nav aria-label="情侣博客导航" data-couple-active="right" class="couple-switcher inline-flex items-center p-1.5 rounded-full bg-[var(--card-bg)] border border-black/5 dark:border-white/10 shadow-sm relative backdrop-blur-md" style="--his-color: #60a5fa; --her-color: var(--primary); --couple-active-color: var(--her-color);">
+                <span class="couple-slider-thumb" aria-hidden="true"></span>
                 <!-- Husband Tab (Link to his about page) -->
-                <a href="https://qiuxiaoxuan.com/about/" class="flex items-center gap-2 px-5 py-2 rounded-full text-sm font-medium text-neutral-500 dark:text-neutral-400 transition-all duration-300" style="--tab-hover: oklch(0.70 0.14 250);" onmouseover="this.style.color='var(--tab-hover)'" onmouseout="this.style.color=''">
-                    <img src={husbandConfig.avatar} alt="秋晓轩" class="w-5 h-5 rounded-full border border-black/10 dark:border-white/10 object-cover" />
-                    秋晓轩
+                <a href="http://localhost:4322/about/" data-couple-link data-couple-direction="left" class="couple-tab couple-tab-link" style="--tab-hover: var(--his-color);">
+                    <img src={husbandConfig.avatar} alt="秋晓轩" class="couple-avatar border border-black/10 dark:border-white/10" />
+                    <span>秋晓轩</span>
                 </a>
+
                 <!-- ECG + Heart Divider -->
-                <div class="flex items-center mx-1.5 text-rose-500 dark:text-rose-400">
-                    <svg viewBox="0 0 60 24" class="w-12 h-5" fill="none">
+                <div class="couple-divider flex items-center mx-1.5 text-rose-500 dark:text-rose-400" aria-hidden="true">
+                    <svg viewBox="0 0 60 24" class="w-12 h-5 shrink-0" fill="none">
                         <path d="M0 12 H12 L16 4 L20 20 L24 1 L28 23 L31 7 L34 12 H60"
-                              stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"
+                              stroke="var(--his-color)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
                               pathLength="100" class="ecg-path-left" />
                     </svg>
-                    <svg viewBox="0 0 24 24" class="w-5 h-5 -mx-0.5 ecg-heart" fill="currentColor">
-                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                    <svg viewBox="0 0 24 24" class="w-5 h-5 shrink-0 -mx-0.5 ecg-heart" fill="currentColor">
+                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
                     </svg>
-                    <svg viewBox="0 0 60 24" class="w-12 h-5" fill="none">
+                    <svg viewBox="0 0 60 24" class="w-12 h-5 shrink-0" fill="none">
                         <path d="M0 12 H26 L29 7 L32 23 L36 1 L40 20 L44 4 L48 12 H60"
-                              stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"
+                              stroke="var(--her-color)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
                               pathLength="100" class="ecg-path-right" />
                     </svg>
                 </div>
+
                 <!-- Wife Tab (Active) -->
-                <div class="flex items-center gap-2 px-5 py-2 rounded-full text-sm font-bold text-white shadow-md cursor-default" style="background-color: var(--primary); box-shadow: 0 4px 12px color-mix(in srgb, var(--primary) 20%, transparent);">
-                    <img src={wifeConfig.avatar} alt="秋晓桃" class="w-5 h-5 rounded-full border border-white/20 object-cover" />
-                    秋晓桃
+                <div class="couple-tab couple-tab-active" aria-current="page" style="--tab-active: var(--her-color);">
+                    <img src={wifeConfig.avatar} alt="秋晓桃" class="couple-avatar border border-white/20" />
+                    <span>秋晓桃</span>
                 </div>
-            </div>
+            </nav>
         </div>
 
         <!-- Main Card -->
@@ -64,6 +67,189 @@ const husbandConfig = {
 </MainGridLayout>
 
 <style is:global>
+/* Keep both sides the same footprint so switching pages never shifts the divider. */
+.couple-switcher {
+    overflow: visible;
+    background-color: color-mix(in srgb, var(--card-bg) 88%, transparent);
+    border-color: color-mix(in srgb, var(--primary) 22%, transparent);
+    box-shadow:
+        0 8px 24px rgb(0 0 0 / 0.12),
+        0 0 0 1px color-mix(in srgb, var(--primary) 16%, transparent),
+        0 0 14px color-mix(in srgb, var(--primary) 10%, transparent),
+        inset 0 1px 0 rgb(255 255 255 / 0.09),
+        inset 0 0 16px color-mix(in srgb, var(--primary) 5%, transparent);
+    transition: box-shadow 300ms ease, border-color 300ms ease;
+}
+.couple-switcher:hover {
+    box-shadow:
+        0 8px 28px rgb(0 0 0 / 0.14),
+        0 0 0 1px color-mix(in srgb, var(--primary) 28%, transparent),
+        0 0 20px color-mix(in srgb, var(--primary) 14%, transparent),
+        inset 0 1px 0 rgb(255 255 255 / 0.11),
+        inset 0 0 18px color-mix(in srgb, var(--primary) 7%, transparent);
+}
+.couple-slider-thumb {
+    position: absolute;
+    z-index: 0;
+    top: 0.375rem;
+    bottom: 0.375rem;
+    left: 0.375rem;
+    width: 7.25rem;
+    border: 1px solid color-mix(in srgb, var(--couple-active-color) 65%, white);
+    border-radius: 9999px;
+    background-color: var(--couple-active-color);
+    box-shadow:
+        0 0 0 1px color-mix(in srgb, var(--couple-active-color) 48%, transparent),
+        0 0 5px color-mix(in srgb, var(--couple-active-color) 70%, transparent),
+        0 0 14px color-mix(in srgb, var(--couple-active-color) 38%, transparent),
+        0 0 24px color-mix(in srgb, var(--couple-active-color) 18%, transparent);
+    pointer-events: none;
+    transition: left 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.couple-switcher[data-couple-active="right"] .couple-slider-thumb {
+    left: calc(100% - 7.25rem - 0.375rem);
+}
+.couple-switcher[data-couple-transition="leaving"] {
+    pointer-events: none;
+}
+.couple-switcher[data-couple-transition="leaving"] .couple-tab-link {
+    z-index: 1;
+    color: white;
+    background-color: transparent;
+    border-color: transparent;
+    box-shadow: none;
+    text-shadow: 0 0 6px color-mix(in srgb, white 42%, transparent);
+    transition: none;
+}
+.couple-switcher[data-couple-transition="leaving"] .couple-tab-active {
+    animation: couple-old-tab 420ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.couple-switcher[data-couple-transition="leaving"] .couple-divider {
+    animation: couple-divider-signal 420ms ease-out forwards;
+}
+.couple-switcher[data-couple-transition="leaving"][data-couple-direction="left"] .couple-slider-thumb {
+    left: 0.375rem;
+    --couple-active-color: var(--his-color);
+}
+.couple-switcher[data-couple-transition="leaving"][data-couple-direction="right"] .couple-slider-thumb {
+    left: calc(100% - 7.25rem - 0.375rem);
+    --couple-active-color: var(--her-color);
+}
+.couple-tab {
+    width: 7.25rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1.25rem;
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    white-space: nowrap;
+    position: relative;
+    isolation: isolate;
+    border: 1px solid transparent;
+    font-weight: 600;
+    z-index: 1;
+    transition: color 300ms ease, background-color 300ms ease, border-color 300ms ease, box-shadow 300ms ease, text-shadow 300ms ease;
+}
+.couple-tab-link {
+    color: rgb(115 115 115);
+    background-color: color-mix(in srgb, var(--tab-hover) 5%, var(--card-bg));
+    border-color: color-mix(in srgb, var(--tab-hover) 24%, transparent);
+    box-shadow:
+        inset 0 0 8px color-mix(in srgb, var(--tab-hover) 7%, transparent),
+        0 0 5px color-mix(in srgb, var(--tab-hover) 10%, transparent);
+    font-weight: 500;
+}
+.dark .couple-tab-link {
+    color: rgb(163 163 163);
+}
+.couple-tab-link:hover {
+    color: var(--tab-hover);
+    background-color: color-mix(in srgb, var(--tab-hover) 10%, var(--card-bg));
+    border-color: color-mix(in srgb, var(--tab-hover) 46%, transparent);
+    box-shadow:
+        inset 0 0 10px color-mix(in srgb, var(--tab-hover) 10%, transparent),
+        0 0 10px color-mix(in srgb, var(--tab-hover) 20%, transparent);
+}
+.couple-tab-active {
+    color: white;
+    background-color: transparent;
+    border-color: transparent;
+    box-shadow: none;
+    text-shadow: 0 0 6px color-mix(in srgb, white 42%, transparent);
+    cursor: default;
+}
+.couple-avatar {
+    width: 1.25rem;
+    height: 1.25rem;
+    flex: 0 0 auto;
+    border-radius: 9999px;
+    object-fit: cover;
+    transition: border-color 300ms ease, box-shadow 300ms ease;
+}
+.couple-tab-link .couple-avatar {
+    border-color: color-mix(in srgb, var(--tab-hover) 46%, transparent);
+    box-shadow: 0 0 5px color-mix(in srgb, var(--tab-hover) 22%, transparent);
+}
+.couple-tab-active .couple-avatar {
+    border-color: color-mix(in srgb, white 78%, var(--tab-active));
+    box-shadow: 0 0 7px color-mix(in srgb, var(--tab-active) 44%, transparent);
+}
+.couple-tab-link:focus-visible {
+    outline: none;
+    box-shadow:
+        inset 0 0 10px color-mix(in srgb, var(--tab-hover) 10%, transparent),
+        0 0 0 2px var(--card-bg),
+        0 0 0 4px color-mix(in srgb, var(--tab-hover) 68%, transparent),
+        0 0 13px color-mix(in srgb, var(--tab-hover) 28%, transparent);
+}
+.couple-divider {
+    position: relative;
+    isolation: isolate;
+    z-index: 1;
+}
+.couple-divider > * {
+    position: relative;
+    z-index: 1;
+}
+.couple-divider > svg:not(.ecg-heart) {
+    overflow: visible;
+}
+.ecg-path-left {
+    filter:
+        drop-shadow(0 0 1px var(--his-color))
+        drop-shadow(0 0 4px var(--his-color))
+        drop-shadow(0 0 9px color-mix(in srgb, var(--his-color) 62%, transparent));
+}
+.ecg-path-right {
+    filter:
+        drop-shadow(0 0 1px var(--her-color))
+        drop-shadow(0 0 4px var(--her-color))
+        drop-shadow(0 0 9px color-mix(in srgb, var(--her-color) 62%, transparent));
+}
+.ecg-heart {
+    filter:
+        drop-shadow(0 0 1px currentColor)
+        drop-shadow(0 0 4px currentColor)
+        drop-shadow(0 0 10px color-mix(in srgb, currentColor 68%, transparent));
+}
+@media (max-width: 640px) {
+    .couple-tab {
+        width: 6.75rem;
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+    .couple-slider-thumb {
+        width: 6.75rem;
+    }
+    .couple-switcher[data-couple-active="right"] .couple-slider-thumb,
+    .couple-switcher[data-couple-transition="leaving"][data-couple-direction="right"] .couple-slider-thumb {
+        left: calc(100% - 6.75rem - 0.375rem);
+    }
+}
+
 /* ECG + Heart Divider Animations */
 .ecg-path-left {
     stroke-dasharray: 100;
@@ -91,8 +277,77 @@ const husbandConfig = {
 @keyframes heartbeat {
     0%, 32%, 100% { transform: scale(1); }
     36% { transform: scale(1.3); }
-    44% { transform: scale(0.95); }
+    42% { transform: scale(0.95); }
     48% { transform: scale(1.18); }
     56% { transform: scale(1); }
 }
+@media (prefers-reduced-motion: reduce) {
+    .ecg-path-left,
+    .ecg-path-right,
+    .ecg-heart {
+        animation: none;
+    }
+    .ecg-path-left,
+    .ecg-path-right {
+        stroke-dashoffset: 0;
+    }
+    .couple-switcher[data-couple-transition="leaving"],
+    .couple-switcher[data-couple-transition="leaving"] .couple-tab-link,
+    .couple-switcher[data-couple-transition="leaving"] .couple-tab-active,
+    .couple-switcher[data-couple-transition="leaving"] .couple-divider {
+        animation: none;
+    }
+}
+@keyframes couple-old-tab {
+    0%, 45% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    100% {
+        opacity: 0.72;
+        transform: scale(0.98);
+    }
+}
+@keyframes couple-divider-signal {
+    0%, 42% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    64% {
+        opacity: 0.86;
+        transform: scale(1.08);
+    }
+    100% {
+        opacity: 0.94;
+        transform: scale(1);
+    }
+}
 </style>
+
+<script>
+    if (!document.documentElement.dataset.coupleNavigationReady) {
+        document.documentElement.dataset.coupleNavigationReady = "true";
+
+        let navigationStarted = false;
+        document.addEventListener("click", (event) => {
+            if (!(event instanceof MouseEvent) || event.defaultPrevented || event.button !== 0) return;
+            if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+
+            const source = event.target;
+            if (!(source instanceof Element)) return;
+
+            const link = source.closest<HTMLAnchorElement>("a[data-couple-link]");
+            const nav = link?.closest<HTMLElement>(".couple-switcher");
+            if (!link || !nav || navigationStarted) return;
+
+            navigationStarted = true;
+            nav.dataset.coupleTransition = "leaving";
+            nav.dataset.coupleDirection = link.dataset.coupleDirection ?? "";
+            nav.setAttribute("aria-busy", "true");
+
+            event.preventDefault();
+            const delay = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 420;
+            window.setTimeout(() => window.location.assign(link.href), delay);
+        }, { capture: true });
+    }
+</script>
