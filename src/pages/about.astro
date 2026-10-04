@@ -112,6 +112,19 @@ const husbandConfig = {
 .couple-switcher[data-couple-transition="leaving"] {
     pointer-events: none;
 }
+.couple-switcher[data-couple-enter-from="left"] .couple-slider-thumb {
+    left: 0.375rem;
+}
+.couple-switcher[data-couple-enter-from="right"] .couple-slider-thumb {
+    left: calc(100% - 7.25rem - 0.375rem);
+}
+.couple-switcher[data-couple-enter-from] .couple-slider-thumb {
+    transition: none;
+}
+.couple-switcher[data-couple-entering] .couple-tab-active {
+    color: color-mix(in srgb, white 64%, var(--tab-active));
+    text-shadow: none;
+}
 .couple-switcher[data-couple-transition="leaving"] .couple-tab-link {
     z-index: 1;
     color: white;
@@ -248,6 +261,9 @@ const husbandConfig = {
     .couple-switcher[data-couple-transition="leaving"][data-couple-direction="right"] .couple-slider-thumb {
         left: calc(100% - 6.75rem - 0.375rem);
     }
+    .couple-switcher[data-couple-enter-from="right"] .couple-slider-thumb {
+        left: calc(100% - 6.75rem - 0.375rem);
+    }
 }
 
 /* ECG + Heart Divider Animations */
@@ -323,31 +339,3 @@ const husbandConfig = {
     }
 }
 </style>
-
-<script>
-    if (!document.documentElement.dataset.coupleNavigationReady) {
-        document.documentElement.dataset.coupleNavigationReady = "true";
-
-        let navigationStarted = false;
-        document.addEventListener("click", (event) => {
-            if (!(event instanceof MouseEvent) || event.defaultPrevented || event.button !== 0) return;
-            if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-
-            const source = event.target;
-            if (!(source instanceof Element)) return;
-
-            const link = source.closest<HTMLAnchorElement>("a[data-couple-link]");
-            const nav = link?.closest<HTMLElement>(".couple-switcher");
-            if (!link || !nav || navigationStarted) return;
-
-            navigationStarted = true;
-            nav.dataset.coupleTransition = "leaving";
-            nav.dataset.coupleDirection = link.dataset.coupleDirection ?? "";
-            nav.setAttribute("aria-busy", "true");
-
-            event.preventDefault();
-            const delay = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 420;
-            window.setTimeout(() => window.location.assign(link.href), delay);
-        }, { capture: true });
-    }
-</script>
