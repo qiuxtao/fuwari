@@ -1,60 +1,66 @@
 name: 自动构建与部署
 
 on:
-  workflow_dispatch:
   push:
     branches:
-      - main  # 监听 main 分支的提交
+      - main
+
+permissions:
+  contents: write
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
 
 env:
   TZ: Asia/Shanghai
 
 jobs:
   deploy:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
-      - name: 检查分支
+      - name: 检出源码
         uses: actions/checkout@v4
-        with:
-          ref: main
+
+      - name: 安装 pnpm
+        uses: pnpm/action-setup@v4
 
       - name: 安装 Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20.x"
-
-      - name: 安装 pnpm
-        uses: pnpm/action-setup@v3
-        with:
-          version: 8
+          node-version: "22.x"
+          cache: pnpm
 
       - name: 安装依赖
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
-      - name: 生成静态文件
+      - name: 生成静态文件和搜索索引
         run: pnpm run build
 
       - name: 将产物推送到 release 分支
+        working-directory: dist
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          cd ./dist
-          git init
-          git config --global user.name 'GitHub Action'
-          git config --global user.email 'action@github.com'
+          git init -b release
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add .
           git commit -m "build: 更新静态文件"
-          git push --force --quiet "https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" master:release
+          git push --force --quiet "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:release
 
-      - name: 服务器执行拉取命令
+      - name: 同步服务器上的静态文件
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.SERVER_IP }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.KEY }}
+          passphrase: ${{ secrets.PASSPHRASE }}
           port: ${{ secrets.PORT }}
           script: |
-            cd /opt/1panel/www/sites/qiuxiaotao.com/index
-            git config --global --add safe.directory "$(pwd)"
-            git fetch --all --depth=1
+            set -eu
+            cd "${{ vars.DEPLOY_PATH }}"
+            git fetch --depth=1 origin +refs/heads/release:refs/remotes/origin/release
             git reset --hard origin/release
-            git pull --depth=1
-            echo "✅ 博客静态文件拉取完成"
+            echo "博客静态文件同步完成"
