@@ -20,8 +20,8 @@ sudo nano /etc/resolv.conf
 国际常用 DNS：
 
 ```bash
-nameserver 8.8.8.8
 nameserver 1.1.1.1
+nameserver 8.8.8.8
 ```
 
 中国大陆常用 DNS：
